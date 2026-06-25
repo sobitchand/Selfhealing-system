@@ -1,0 +1,63 @@
+[
+  {
+    "type": "js_error",
+    "message": "ReferenceError: x is not defined",
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-06-25T15:35:13.167554+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-06-25T15:35:13.188969+00:00"
+  },
+  {
+    "type": "js_error",
+    "message": "Unhandled script execution crash",
+    "file": "unknown_module",
+    "line": 0,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-06-25T15:35:41.629630+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-06-25T15:35:41.640632+00:00"
+  },
+  {
+    "type": "resource_failure",
+    "message": "Failed to load asset source location: http://127.0.0.1:8000/missing-asset.png",
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-06-25T15:35:41.665087+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-06-25T15:38:48.994006+00:00"
+  },
+  {
+    "type": "js_error",
+    "message": "Unhandled script execution crash",
+    "file": "unknown_module",
+    "line": 0,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-06-25T15:38:49.059820+00:00"
+  },
+  {
+    "type": "resource_failure",
+    "message": "Failed to load asset source location: http://127.0.0.1:8000/missing-asset.png",
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-06-25T15:38:49.084561+00:00"
+  }
+]

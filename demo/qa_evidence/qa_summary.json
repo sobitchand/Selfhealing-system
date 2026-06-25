@@ -1,0 +1,58 @@
+{
+  "checks": [
+    {
+      "name": "Case NORMAL lifecycle == continue",
+      "status": "PASS",
+      "detail": "(got continue)"
+    },
+    {
+      "name": "Case NORMAL recovered locator",
+      "status": "PASS",
+      "detail": "(got button.btn.btn-main)"
+    },
+    {
+      "name": "Case MEDIUM lifecycle == verify",
+      "status": "PASS",
+      "detail": "(got verify)"
+    },
+    {
+      "name": "Case CRITICAL lifecycle == halt",
+      "status": "PASS",
+      "detail": "(got halt)"
+    },
+    {
+      "name": "ui_heals has success + warning (+ passive success)",
+      "status": "PASS",
+      "detail": "statuses=['success', 'success', 'warning']"
+    },
+    {
+      "name": "CRITICAL routed to alerts (not ui_heals)",
+      "status": "PASS",
+      "detail": "alerts=3"
+    },
+    {
+      "name": "infrastructure row written",
+      "status": "PASS",
+      "detail": "infra=1"
+    },
+    {
+      "name": "disk>90 critical alert present",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "browser_events captured both",
+      "status": "PASS",
+      "detail": "events=2"
+    }
+  ],
+  "counts": {
+    "ui_heals": 3,
+    "infrastructure": 1,
+    "alerts": 3,
+    "browser_events": 2,
+    "source_heals": 0
+  },
+  "passed": 9,
+  "total": 9
+}

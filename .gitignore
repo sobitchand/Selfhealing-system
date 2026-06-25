@@ -1,0 +1,28 @@
+# Virtual environments
+venv/
+.venv/
+demo/venv/
+demo/.venv/
+
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Remember-skill tooling (not project code)
+.remember/
+demo/.remember/
+
+# Runtime store internals (locks / temp / pid / state)
+*.lock
+*.tmp
+*.pid
+demo/data/buckets/*.lock
+demo/data/heal_state.json
+
+# Source-heal backups (regenerated at runtime)
+*.bak
+
+# OS / editor
+.DS_Store
+Thumbs.db

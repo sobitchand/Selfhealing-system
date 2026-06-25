@@ -1,0 +1,230 @@
+{
+  "start-btn": {
+    "key": "start-btn",
+    "locator_by": "css selector",
+    "locator_value": "#start-btn",
+    "element_id": "start-btn",
+    "inner_text": "START",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/div[1]/div[2]/button[2]",
+    "css_class": "btn btn-main",
+    "tag_name": "button",
+    "neighbors": [
+      {
+        "tag_name": "button",
+        "text": "Reset"
+      },
+      {
+        "tag_name": "button",
+        "text": "Skip"
+      },
+      {
+        "tag_name": "div",
+        "text": "START"
+      }
+    ],
+    "healed_locator_value": "#start-btn",
+    "healed_locator_by": "css selector"
+  },
+  "btn-focus": {
+    "key": "btn-focus",
+    "locator_by": "css selector",
+    "locator_value": "#btn-focus",
+    "element_id": "btn-focus",
+    "inner_text": "Focus",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/header[1]/div[2]/button[1]",
+    "css_class": "active",
+    "tag_name": "button",
+    "neighbors": [
+      {
+        "tag_name": "button",
+        "text": "Short Break"
+      },
+      {
+        "tag_name": "div",
+        "text": "Focus Short Break Long Break"
+      }
+    ],
+    "healed_locator_value": "#btn-focus",
+    "healed_locator_by": "css selector"
+  },
+  "btn-short": {
+    "key": "btn-short",
+    "locator_by": "css selector",
+    "locator_value": "#btn-short",
+    "element_id": "btn-short",
+    "inner_text": "Short Break",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/header[1]/div[2]/button[2]",
+    "css_class": "",
+    "tag_name": "button",
+    "neighbors": [
+      {
+        "tag_name": "button",
+        "text": "Focus"
+      },
+      {
+        "tag_name": "button",
+        "text": "Long Break"
+      },
+      {
+        "tag_name": "div",
+        "text": "Focus Short Break Long Break"
+      }
+    ],
+    "healed_locator_value": "#btn-short",
+    "healed_locator_by": "css selector"
+  },
+  "btn-long": {
+    "key": "btn-long",
+    "locator_by": "css selector",
+    "locator_value": "#btn-long",
+    "element_id": "btn-long",
+    "inner_text": "Long Break",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/header[1]/div[2]/button[3]",
+    "css_class": "",
+    "tag_name": "button",
+    "neighbors": [
+      {
+        "tag_name": "button",
+        "text": "Short Break"
+      },
+      {
+        "tag_name": "div",
+        "text": "Focus Short Break Long Break"
+      }
+    ]
+  },
+  "time-display": {
+    "key": "time-display",
+    "locator_by": "css selector",
+    "locator_value": "#time-display",
+    "element_id": "time-display",
+    "inner_text": "25:00",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/div[1]/div[1]/div[1]",
+    "css_class": "time-big",
+    "tag_name": "div",
+    "neighbors": [
+      {
+        "tag_name": "div",
+        "text": "Focus Session"
+      },
+      {
+        "tag_name": "div",
+        "text": "25:00 Focus Session"
+      }
+    ],
+    "healed_locator_value": "#time-display",
+    "healed_locator_by": "css selector"
+  },
+  "dur-focus": {
+    "key": "dur-focus",
+    "locator_by": "css selector",
+    "locator_value": "#dur-focus",
+    "element_id": "dur-focus",
+    "inner_text": "25",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/aside[1]/div[1]/div[2]/div[1]/span[1]",
+    "css_class": "duration-val",
+    "tag_name": "span",
+    "neighbors": [
+      {
+        "tag_name": "button",
+        "text": "-"
+      },
+      {
+        "tag_name": "button",
+        "text": "+"
+      },
+      {
+        "tag_name": "div",
+        "text": "- 25 +"
+      }
+    ]
+  },
+  "dur-short": {
+    "key": "dur-short",
+    "locator_by": "css selector",
+    "locator_value": "#dur-short",
+    "element_id": "dur-short",
+    "inner_text": "5",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/aside[1]/div[1]/div[3]/div[1]/span[1]",
+    "css_class": "duration-val",
+    "tag_name": "span",
+    "neighbors": [
+      {
+        "tag_name": "button",
+        "text": "-"
+      },
+      {
+        "tag_name": "button",
+        "text": "+"
+      },
+      {
+        "tag_name": "div",
+        "text": "- 5 +"
+      }
+    ]
+  },
+  "dur-long": {
+    "key": "dur-long",
+    "locator_by": "css selector",
+    "locator_value": "#dur-long",
+    "element_id": "dur-long",
+    "inner_text": "20",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/aside[1]/div[1]/div[4]/div[1]/span[1]",
+    "css_class": "duration-val",
+    "tag_name": "span",
+    "neighbors": [
+      {
+        "tag_name": "button",
+        "text": "-"
+      },
+      {
+        "tag_name": "button",
+        "text": "+"
+      },
+      {
+        "tag_name": "div",
+        "text": "- 20 +"
+      }
+    ]
+  },
+  "stat-pomodoros": {
+    "key": "stat-pomodoros",
+    "locator_by": "css selector",
+    "locator_value": "#stat-pomodoros",
+    "element_id": "stat-pomodoros",
+    "inner_text": "0",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/aside[1]/div[2]/div[2]/div[1]/div[1]",
+    "css_class": "stat-val accent",
+    "tag_name": "div",
+    "neighbors": [
+      {
+        "tag_name": "div",
+        "text": "Pomodoros"
+      },
+      {
+        "tag_name": "div",
+        "text": "0 Pomodoros"
+      }
+    ]
+  },
+  "session-log": {
+    "key": "session-log",
+    "locator_by": "css selector",
+    "locator_value": "#session-log",
+    "element_id": "session-log",
+    "inner_text": "No sessions yet - start focusing!",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/aside[1]/div[3]/div[2]",
+    "css_class": "session-log",
+    "tag_name": "div",
+    "neighbors": [
+      {
+        "tag_name": "div",
+        "text": "Session Log"
+      },
+      {
+        "tag_name": "div",
+        "text": "No sessions yet"
+      }
+    ]
+  }
+}

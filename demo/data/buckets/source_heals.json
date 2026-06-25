@@ -1,0 +1,10 @@
+[
+  {
+    "timestamp": "2026-06-25T15:35:45.043131+00:00",
+    "file": "run_selenium_heal.py",
+    "broken_token": "old-start-btn",
+    "healed_token": "start-btn",
+    "occurrences": 1,
+    "status": "patched"
+  }
+]
