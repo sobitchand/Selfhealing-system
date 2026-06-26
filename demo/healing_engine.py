@@ -88,6 +88,7 @@ class UIHeuristicEngine:
         best_match_id = None
         highest_score = 0.0
         winning_metrics = {}
+        best_candidate = None
 
         # Intent-aware: resolve WHICH element this broken locator meant, so two
         # different broken locators don't both heal to the same top element. If
@@ -118,6 +119,7 @@ class UIHeuristicEngine:
                 if composite_score > highest_score:
                     highest_score = composite_score
                     best_match_id = element_key
+                    best_candidate = cand  # remember the LIVE element that won
                     winning_metrics = {
                         "R1_text_40": round(r1, 2),
                         "R2_xpath_30": round(r2, 2),
@@ -125,7 +127,7 @@ class UIHeuristicEngine:
                         "R4_neighbors_10": round(r4, 2),
                     }
 
-        return best_match_id, highest_score, winning_metrics
+        return best_match_id, highest_score, winning_metrics, best_candidate
 
     def canonical_locator(self, match_id):
         """Stable write-back token for a matched fingerprint.

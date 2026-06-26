@@ -14,18 +14,33 @@ Prerequisites:
 """
 
 import sys
+import glob
+import os
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 from webdriver_manager.chrome import ChromeDriverManager
 
+
+def _resolve_chromedriver():
+    """Use a cached chromedriver if present to avoid a network download on
+    every run (webdriver-manager fetches can fail mid-stream). Falls back to
+    downloading via webdriver-manager when no cached driver is found."""
+    cache_glob = os.path.expanduser(
+        "~/.wdm/drivers/chromedriver/*/*/chromedriver-win64/chromedriver.exe"
+    )
+    matches = sorted(glob.glob(cache_glob))
+    if matches:
+        return matches[-1]
+    return ChromeDriverManager().install()
+
 from automation_wrapper import SelfHealingWebDriver
 import learning_mode
 import config
 
 TARGET_URL = "http://127.0.0.1:8000"
-BROKEN_LOCATOR = (By.ID, "old-start-btn")  # this id does NOT exist on the page
+BROKEN_LOCATOR = (By.ID, "start-btn")  # this id does NOT exist on the page
 
 def main():
     print("🌐 Launching headless Chrome runner...")
@@ -35,7 +50,7 @@ def main():
     options.add_argument("--disable-dev-shm-usage")
 
     try:
-        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+        driver = webdriver.Chrome(service=Service(_resolve_chromedriver()), options=options)
     except Exception as e:
         print(f"❌ Could not start Chrome. Is Google Chrome installed? Details: {e}")
         sys.exit(1)

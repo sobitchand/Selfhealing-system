@@ -27,12 +27,15 @@ def handle_active_heal(engine, broken_selector, candidates):
     Synchronous heal. Scores live DOM candidates against the golden fingerprints,
     commits the result, and returns the decision so the caller can keep driving.
 
-    Returns: (lifecycle, recovered_locator, confidence_score, match_id)
+    Returns: (lifecycle, recovered_locator, confidence_score, match_id, best_candidate)
     match_id is the canonical fingerprint key (== element id) for source write-back.
+    best_candidate is the winning LIVE element dict (carries its current xpath) so
+    the caller can re-grab the element even when the attribute the old selector
+    used was the one that changed.
     """
-    match_id, score, metrics = engine.evaluate_live_candidates(broken_selector, candidates)
+    match_id, score, metrics, best_candidate = engine.evaluate_live_candidates(broken_selector, candidates)
     lifecycle, recovered, match_id = engine.commit_heal_to_log(broken_selector, match_id, score, metrics)
-    return lifecycle, recovered, score, match_id
+    return lifecycle, recovered, score, match_id, best_candidate
 
 
 # --------------------------- PASSIVE path ---------------------------
