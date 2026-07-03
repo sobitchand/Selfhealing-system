@@ -26,3 +26,4 @@ demo/data/heal_state.json
 # OS / editor
 .DS_Store
 Thumbs.db
+ .vscode/

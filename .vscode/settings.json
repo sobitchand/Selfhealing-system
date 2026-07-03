@@ -1,0 +1,8 @@
+{
+  "python.defaultInterpreterPath": "C:\\Users\\aayus\\OneDrive\\Desktop\\Selfhealing-system\\demo\\.venv\\Scripts\\python.exe",
+  "python.terminal.activateEnvironment": true,
+  "python.analysis.extraPaths": [
+    "C:\\Users\\aayus\\OneDrive\\Desktop\\Selfhealing-system\\demo\\.venv\\Lib\\site-packages",
+    "C:\\Users\\aayus\\OneDrive\\Desktop\\Selfhealing-system\\demo"
+  ]
+}
