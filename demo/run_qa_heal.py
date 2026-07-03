@@ -21,10 +21,16 @@ Run:
 """
 
 import sys
+import time
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
+
+# --headed / --show -> run a VISIBLE Chrome window with pauses so an audience can
+# watch the break + heal happen live. Default stays headless (fast / CI).
+HEADED = ("--headed" in sys.argv) or ("--show" in sys.argv)
+PAUSE = 2.0 if HEADED else 0.0  # seconds to linger so the eye can follow
 
 # Reuse the cached-chromedriver resolver so this suite gets the same
 # network-free startup fix as the main demo runner.
@@ -69,10 +75,29 @@ SCENARIOS = [
 
 def _make_driver():
     options = webdriver.ChromeOptions()
-    options.add_argument("--headless=new")
+    if not HEADED:
+        options.add_argument("--headless=new")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
+    if HEADED:
+        options.add_argument("--start-maximized")
     return webdriver.Chrome(service=Service(_resolve_chromedriver()), options=options)
+
+
+def _highlight(driver, element, color):
+    """Flash a coloured outline around an element so the audience sees what the
+    healer grabbed. No-op in headless mode."""
+    if not HEADED or element is None:
+        return
+    try:
+        driver.execute_script(
+            "arguments[0].scrollIntoView({block:'center'});"
+            "arguments[0].style.outline='4px solid ' + arguments[1];"
+            "arguments[0].style.boxShadow='0 0 24px ' + arguments[1];",
+            element, color,
+        )
+    except Exception:
+        pass
 
 
 def run_scenario(driver, scenario):
@@ -80,6 +105,7 @@ def run_scenario(driver, scenario):
     by, value = scenario["locator"]
     url = f"{TARGET_URL}/?break={scenario['break']}"
     driver.get(url)
+    time.sleep(PAUSE)  # let the audience see the (broken) page before healing
 
     healing_driver = SelfHealingWebDriver(driver)
     result = {"name": scenario["name"], "locator": f"{by}='{value}'", "passed": False, "detail": ""}
@@ -90,16 +116,19 @@ def run_scenario(driver, scenario):
         if text == scenario["expect_text"]:
             result["passed"] = True
             result["detail"] = f"healed -> <{element.tag_name}> text='{text}'"
+            _highlight(driver, element, "lime")   # green = healed correctly
         else:
             result["detail"] = f"healed to WRONG element: text='{text}' (expected '{scenario['expect_text']}')"
+            _highlight(driver, element, "orange")
     except NoSuchElementException as e:
         result["detail"] = f"NOT healed: {str(e).splitlines()[0]}"
+    time.sleep(PAUSE)  # linger on the highlighted result
     return result
 
 
 def main():
     print("🧪 QA Self-Healing Suite — auditing the app after a refactor\n")
-    print("🌐 Launching headless Chrome runner...")
+    print(f"🌐 Launching {'VISIBLE' if HEADED else 'headless'} Chrome runner...")
     try:
         driver = _make_driver()
     except Exception as e:
@@ -119,6 +148,9 @@ def main():
             print(f"  Dev changed the app; stale locator now points at nothing: {sc['locator'][0]}='{sc['locator'][1]}'")
             results.append(run_scenario(driver, sc))
     finally:
+        if HEADED:
+            print("\n⏸️  Headed mode: closing the browser in 6s...")
+            time.sleep(6)
         driver.quit()
 
     # ---------------------------- QA report ----------------------------

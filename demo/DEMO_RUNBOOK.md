@@ -20,7 +20,7 @@ python -m streamlit run dashboard.py
 Open **http://localhost:8501** and keep it visible.
 
 **Terminal B — collector** (receives browser-agent events):
-```powershell
+```powershell/cd demo
 python collector_server.py
 ```
 

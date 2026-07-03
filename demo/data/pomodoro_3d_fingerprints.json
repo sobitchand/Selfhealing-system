@@ -225,6 +225,8 @@
         "tag_name": "div",
         "text": "No sessions yet"
       }
-    ]
+    ],
+    "healed_locator_value": "#session-log",
+    "healed_locator_by": "css selector"
   }
 }

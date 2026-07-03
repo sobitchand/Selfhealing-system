@@ -40,7 +40,7 @@ import learning_mode
 import config
 
 TARGET_URL = "http://127.0.0.1:8000"
-BROKEN_LOCATOR = (By.ID, "start-btn")  # this id does NOT exist on the page
+BROKEN_LOCATOR = (By.ID, "old-start-btn")  # this id does NOT exist on the page
 
 def main():
     print("🌐 Launching headless Chrome runner...")

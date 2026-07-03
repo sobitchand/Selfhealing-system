@@ -150,8 +150,8 @@ def do_demo():
 
     banner("STEP 4  —  SEE IT ON THE DASHBOARD")
     print(f"Open: {DASHBOARD_URL}")
-    print("  Tab 'UI Heuristic Healing'  -> the heal + confidence score")
-    print("  Tab 'Source Code Heals'     -> the write-back row above")
+    print("  Tab 'UI Heuristic Healing'    -> the heal + confidence score")
+    print("  Tab 'Locator Self-Correction' -> the source write-back row above")
     print("\nProof it is permanent: run 'python run_selenium_heal.py' again —")
     print("the locator is valid now, so NO heal fires.")
     print("\nRepeat the demo:  python demo_show.py        (auto re-arms first)")

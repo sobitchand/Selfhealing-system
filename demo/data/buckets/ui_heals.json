@@ -1,36 +1,84 @@
 [
   {
-    "timestamp": "2026-06-25T15:35:13.106243+00:00",
-    "broken_selector": "#old-start-btn",
+    "timestamp": "2026-06-26T07:25:35.961849+00:00",
+    "broken_selector": "#old-start",
+    "recovered_selector": "button[text='START']",
+    "confidence_score": 88.5,
+    "policy": "AUTOMATIC RUNTIME HEAL",
+    "status": "success",
+    "details": {
+      "context": "Triggered via Browser UI client engine abstraction agent wrapper."
+    }
+  },
+  {
+    "timestamp": "2026-06-26T07:25:36.037229+00:00",
+    "broken_selector": "#old-start",
+    "recovered_selector": "button[text='START']",
+    "confidence_score": 88.5,
+    "policy": "AUTOMATIC RUNTIME HEAL",
+    "status": "success",
+    "details": {
+      "context": "Triggered via Browser UI client engine abstraction agent wrapper."
+    }
+  },
+  {
+    "timestamp": "2026-06-26T07:25:36.180573+00:00",
+    "broken_selector": "#old-start",
+    "recovered_selector": "button[text='START']",
+    "confidence_score": 88.5,
+    "policy": "AUTOMATIC RUNTIME HEAL",
+    "status": "success",
+    "details": {
+      "context": "Triggered via Browser UI client engine abstraction agent wrapper."
+    }
+  },
+  {
+    "timestamp": "2026-06-26T07:25:38.839759+00:00",
+    "broken_selector": "id='start-btn'",
     "recovered_selector": "button.btn.btn-main",
     "healed_locator": "#start-btn",
-    "confidence_score": 100.0,
+    "confidence_score": 93.05,
     "policy": "AUTOMATIC HEAL",
     "status": "success",
     "details": {
       "component_scores": {
-        "R1_inner_text": 100.0,
-        "R2_css_class": 100.0
+        "R1_text_40": 100.0,
+        "R2_xpath_30": 85.71,
+        "R3_css_20": 100.0,
+        "R4_neighbors_10": 73.33
       }
     }
   },
   {
-    "timestamp": "2026-06-25T15:35:13.113386+00:00",
-    "broken_selector": "#submit-feedback-btn",
-    "recovered_selector": "button",
-    "healed_locator": "#btn-short",
-    "confidence_score": 55.0,
-    "policy": "CAUTIOUS HEAL",
-    "status": "warning",
+    "timestamp": "2026-06-26T07:25:38.909991+00:00",
+    "broken_selector": "#old-start",
+    "recovered_selector": "button[text='START']",
+    "confidence_score": 88.5,
+    "policy": "AUTOMATIC RUNTIME HEAL",
+    "status": "success",
+    "details": {
+      "context": "Triggered via Browser UI client engine abstraction agent wrapper."
+    }
+  },
+  {
+    "timestamp": "2026-06-26T07:25:41.736276+00:00",
+    "broken_selector": "css selector='[data-action='start']'",
+    "recovered_selector": "button.btn.btn-main",
+    "healed_locator": "#start-btn",
+    "confidence_score": 93.05,
+    "policy": "AUTOMATIC HEAL",
+    "status": "success",
     "details": {
       "component_scores": {
-        "R1_inner_text": 100.0,
-        "R2_css_class": 100.0
+        "R1_text_40": 100.0,
+        "R2_xpath_30": 85.71,
+        "R3_css_20": 100.0,
+        "R4_neighbors_10": 73.33
       }
     }
   },
   {
-    "timestamp": "2026-06-25T15:35:13.188969+00:00",
+    "timestamp": "2026-06-26T07:25:41.821925+00:00",
     "broken_selector": "#old-start",
     "recovered_selector": "button[text='START']",
     "confidence_score": 88.5,
@@ -41,7 +89,7 @@
     }
   },
   {
-    "timestamp": "2026-06-25T15:35:41.640632+00:00",
+    "timestamp": "2026-06-26T07:30:12.085638+00:00",
     "broken_selector": "#old-start",
     "recovered_selector": "button[text='START']",
     "confidence_score": 88.5,
@@ -52,7 +100,7 @@
     }
   },
   {
-    "timestamp": "2026-06-25T15:35:44.987815+00:00",
+    "timestamp": "2026-06-26T07:30:14.341584+00:00",
     "broken_selector": "id='old-start-btn'",
     "recovered_selector": "button.btn.btn-main",
     "healed_locator": "#start-btn",
@@ -69,7 +117,63 @@
     }
   },
   {
-    "timestamp": "2026-06-25T15:38:48.994006+00:00",
+    "timestamp": "2026-06-26T07:31:33.172010+00:00",
+    "broken_selector": "#old-start",
+    "recovered_selector": "button[text='START']",
+    "confidence_score": 88.5,
+    "policy": "AUTOMATIC RUNTIME HEAL",
+    "status": "success",
+    "details": {
+      "context": "Triggered via Browser UI client engine abstraction agent wrapper."
+    }
+  },
+  {
+    "timestamp": "2026-06-26T07:31:35.171966+00:00",
+    "broken_selector": "id='old-start-btn'",
+    "recovered_selector": "button.btn.btn-main",
+    "healed_locator": "#start-btn",
+    "confidence_score": 93.05,
+    "policy": "AUTOMATIC HEAL",
+    "status": "success",
+    "details": {
+      "component_scores": {
+        "R1_text_40": 100.0,
+        "R2_xpath_30": 85.71,
+        "R3_css_20": 100.0,
+        "R4_neighbors_10": 73.33
+      }
+    }
+  },
+  {
+    "timestamp": "2026-06-26T07:42:41.677314+00:00",
+    "broken_selector": "#old-start",
+    "recovered_selector": "button[text='START']",
+    "confidence_score": 88.5,
+    "policy": "AUTOMATIC RUNTIME HEAL",
+    "status": "success",
+    "details": {
+      "context": "Triggered via Browser UI client engine abstraction agent wrapper."
+    }
+  },
+  {
+    "timestamp": "2026-06-26T07:42:43.698596+00:00",
+    "broken_selector": "id='btn-focus-old'",
+    "recovered_selector": "button.active",
+    "healed_locator": "#btn-focus",
+    "confidence_score": 93.37,
+    "policy": "AUTOMATIC HEAL",
+    "status": "success",
+    "details": {
+      "component_scores": {
+        "R1_text_40": 100.0,
+        "R2_xpath_30": 85.71,
+        "R3_css_20": 100.0,
+        "R4_neighbors_10": 76.53
+      }
+    }
+  },
+  {
+    "timestamp": "2026-06-26T07:44:16.679696+00:00",
     "broken_selector": "#old-start",
     "recovered_selector": "button[text='START']",
     "confidence_score": 88.5,

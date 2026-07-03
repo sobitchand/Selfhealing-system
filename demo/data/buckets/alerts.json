@@ -1,38 +1,80 @@
 [
   {
-    "timestamp": "2026-06-25T15:35:13.138801+00:00",
-    "severity": "critical",
-    "message": "Locator recovery aborted. Dynamic match too low (12.0%). Locator: #checkout-pay-btn",
-    "source": "UIHeuristicEngine"
-  },
-  {
-    "timestamp": "2026-06-25T15:35:13.143212+00:00",
-    "severity": "critical",
-    "message": "Disk space critically low (92.4%). Running automatic cleanup.",
-    "source": "InfrastructureEngine"
-  },
-  {
-    "timestamp": "2026-06-25T15:35:13.167554+00:00",
-    "severity": "warning",
-    "message": "Browser Application Anomaly (js_error): ReferenceError: x is not defined",
-    "source": "JSBrowserAgent (Pomodoro 3D Focus Timer)"
-  },
-  {
-    "timestamp": "2026-06-25T15:35:41.629630+00:00",
+    "timestamp": "2026-06-26T07:25:35.951917+00:00",
     "severity": "warning",
     "message": "Browser Application Anomaly (js_error): Unhandled script execution crash",
     "source": "JSBrowserAgent (Pomodoro 3D Focus Timer)"
   },
   {
-    "timestamp": "2026-06-25T15:38:49.059820+00:00",
-    "severity": "warning",
-    "message": "Browser Application Anomaly (js_error): Unhandled script execution crash",
-    "source": "JSBrowserAgent (Pomodoro 3D Focus Timer)"
-  },
-  {
-    "timestamp": "2026-06-25T15:38:49.084561+00:00",
+    "timestamp": "2026-06-26T07:25:35.980815+00:00",
     "severity": "warning",
     "message": "Browser Application Anomaly (resource_failure): Failed to load asset source location: http://127.0.0.1:8000/missing-asset.png",
     "source": "JSBrowserAgent (Pomodoro 3D Focus Timer)"
+  },
+  {
+    "timestamp": "2026-06-26T07:25:36.110262+00:00",
+    "severity": "warning",
+    "message": "Browser Application Anomaly (js_error): Unhandled script execution crash",
+    "source": "JSBrowserAgent (Pomodoro 3D Focus Timer)"
+  },
+  {
+    "timestamp": "2026-06-26T07:25:36.143870+00:00",
+    "severity": "warning",
+    "message": "Browser Application Anomaly (resource_failure): Failed to load asset source location: http://127.0.0.1:8000/missing-asset.png",
+    "source": "JSBrowserAgent (Pomodoro 3D Focus Timer)"
+  },
+  {
+    "timestamp": "2026-06-26T07:30:12.075310+00:00",
+    "severity": "warning",
+    "message": "Browser Application Anomaly (js_error): Unhandled script execution crash",
+    "source": "JSBrowserAgent (Pomodoro 3D Focus Timer)"
+  },
+  {
+    "timestamp": "2026-06-26T07:30:12.115327+00:00",
+    "severity": "warning",
+    "message": "Browser Application Anomaly (resource_failure): Failed to load asset source location: http://127.0.0.1:8000/missing-asset.png",
+    "source": "JSBrowserAgent (Pomodoro 3D Focus Timer)"
+  },
+  {
+    "timestamp": "2026-06-26T07:31:33.150191+00:00",
+    "severity": "warning",
+    "message": "Browser Application Anomaly (js_error): Unhandled script execution crash",
+    "source": "JSBrowserAgent (Pomodoro 3D Focus Timer)"
+  },
+  {
+    "timestamp": "2026-06-26T07:31:33.225282+00:00",
+    "severity": "warning",
+    "message": "Browser Application Anomaly (resource_failure): Failed to load asset source location: http://127.0.0.1:8000/missing-asset.png",
+    "source": "JSBrowserAgent (Pomodoro 3D Focus Timer)"
+  },
+  {
+    "timestamp": "2026-06-26T07:42:41.633743+00:00",
+    "severity": "warning",
+    "message": "Browser Application Anomaly (js_error): Unhandled script execution crash",
+    "source": "JSBrowserAgent (Pomodoro 3D Focus Timer)"
+  },
+  {
+    "timestamp": "2026-06-26T07:42:41.644178+00:00",
+    "severity": "warning",
+    "message": "Browser Application Anomaly (resource_failure): Failed to load asset source location: http://127.0.0.1:8000/missing-asset.png",
+    "source": "JSBrowserAgent (Pomodoro 3D Focus Timer)"
+  },
+  {
+    "timestamp": "2026-06-26T07:44:16.698474+00:00",
+    "severity": "warning",
+    "message": "Browser Application Anomaly (js_error): Unhandled script execution crash",
+    "source": "JSBrowserAgent (Pomodoro 3D Focus Timer)"
+  },
+  {
+    "timestamp": "2026-06-26T07:44:16.735583+00:00",
+    "severity": "warning",
+    "message": "Browser Application Anomaly (resource_failure): Failed to load asset source location: http://127.0.0.1:8000/missing-asset.png",
+    "source": "JSBrowserAgent (Pomodoro 3D Focus Timer)"
+  },
+  {
+    "timestamp": "2026-06-26T07:44:18.849538+00:00",
+    "severity": "critical",
+    "message": "Locator recovery aborted. Dynamic match too low (0.0%). Locator: id='zzz-nonexistent-999'",
+    "source": "UIHeuristicEngine"
   }
 ]

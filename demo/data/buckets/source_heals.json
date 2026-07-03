@@ -1,9 +1,25 @@
 [
   {
-    "timestamp": "2026-06-25T15:35:45.043131+00:00",
+    "timestamp": "2026-06-26T07:30:14.404728+00:00",
     "file": "run_selenium_heal.py",
     "broken_token": "old-start-btn",
     "healed_token": "start-btn",
+    "occurrences": 1,
+    "status": "patched"
+  },
+  {
+    "timestamp": "2026-06-26T07:31:35.210561+00:00",
+    "file": "run_selenium_heal.py",
+    "broken_token": "old-start-btn",
+    "healed_token": "start-btn",
+    "occurrences": 1,
+    "status": "patched"
+  },
+  {
+    "timestamp": "2026-06-26T07:42:43.768857+00:00",
+    "file": "run_selenium_heal.py",
+    "broken_token": "btn-focus-old",
+    "healed_token": "btn-focus",
     "occurrences": 1,
     "status": "patched"
   }

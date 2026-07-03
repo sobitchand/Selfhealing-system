@@ -91,13 +91,18 @@ class UIHeuristicEngine:
         best_candidate = None
 
         # Intent-aware: resolve WHICH element this broken locator meant, so two
-        # different broken locators don't both heal to the same top element. If
-        # no fingerprint is similar enough, fall back to scanning all of them.
+        # different broken locators don't both heal to the same top element.
+        #
+        # Safety gate: if NO baseline fingerprint resembles the broken locator, we
+        # genuinely don't know what the caller was trying to find. Refuse to guess.
+        # (A global scan would otherwise always self-match SOME live element at
+        # ~98% — e.g. a random <div> — and "heal" to it, defeating the whole
+        # CRITICAL-FAULT safety story.) Returning no match keeps confidence at 0
+        # so commit_heal_to_log routes to 'halt' / manual intervention.
         target_key, _ = self.select_target_fingerprint(broken_selector)
-        if target_key:
-            search_space = {target_key: self.fingerprints[target_key]}
-        else:
-            search_space = self.fingerprints
+        if not target_key:
+            return None, 0.0, {}, None
+        search_space = {target_key: self.fingerprints[target_key]}
 
         for element_key, golden in search_space.items():
             for cand in candidates:
