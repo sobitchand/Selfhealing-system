@@ -1,12 +1,6 @@
 [
   {
-    "timestamp": "2026-06-25T15:35:13.143212+00:00",
-    "trigger_metric": "Status: 500, Error: 73.0%, Disk: 92.4%",
-    "action_executed": "Automated Log Rotation & Temp File Purge",
-    "status": "resolved"
-  },
-  {
-    "timestamp": "2026-06-25T15:35:51.521166+00:00",
+    "timestamp": "2026-06-26T07:44:53.037461+00:00",
     "trigger_metric": "RAM Overhead > 92%",
     "anomaly_found": "Memory leak detected in persistent background worker pools",
     "recovery_action": "Gracefully reloaded WSGI application worker daemon subprocesses",

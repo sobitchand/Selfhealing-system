@@ -1,7 +1,30 @@
 import sys
 import os
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from urllib.parse import urlsplit, parse_qs
 import random
+
+
+def _apply_break(html, mode):
+    """QA/DevOps fault injection: mutate the START button's markup the way a
+    developer might during a refactor, so a stale locator now errors and the
+    self-healing layer has something real to recover. DOM position/text are
+    preserved, so the golden fingerprint still recognises the element.
+
+    Modes: 'css' (rename class), 'id' (rename id), 'attr' (rename data-action),
+    'all' (apply all three). Anything else returns the page unchanged."""
+    if mode == "css":
+        return html.replace('class="btn btn-main"', 'class="btn btn-primary"')
+    if mode == "id":
+        return html.replace('id="start-btn"', 'id="start-btn-v2"')
+    if mode == "attr":
+        return html.replace('data-action="start"', 'data-action="begin"')
+    if mode == "all":
+        return (html
+                .replace('class="btn btn-main"', 'class="btn btn-primary"')
+                .replace('id="start-btn"', 'id="start-btn-v2"')
+                .replace('data-action="start"', 'data-action="begin"'))
+    return html
 
 # Ensure local selfhealing package is available on the import path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -12,8 +35,14 @@ class InstrumentedTargetAppHandler(BaseHTTPRequestHandler):
         pass # Suppress standard console logs to keep terminal clear
 
     def do_GET(self):
+        # Split off any ?query so routing matches on the path and we can read the
+        # ?break=<mode> fault-injection flag used by the QA self-healing demo.
+        parsed = urlsplit(self.path)
+        route = parsed.path
+        break_mode = parse_qs(parsed.query).get("break", [""])[0]
+
         # Route 1: Normal working path
-        if self.path == "/" or self.path == "":
+        if route == "/" or route == "":
             with monitor.track_request(path="/", method="GET") as status:
                 self.send_response(200)
                 self.send_header("Content-type", "text/html")
@@ -91,7 +120,7 @@ class InstrumentedTargetAppHandler(BaseHTTPRequestHandler):
                             <div class="timer">
                                 <div id="time-display" class="time-big">25:00</div>
                                 <div class="controls">
-                                    <button id="start-btn" class="btn btn-main">START</button>
+                                    <button id="start-btn" class="btn btn-main" data-action="start">START</button>
                                     <button id="reset-btn">Reset</button>
                                     <button id="skip-btn">Skip</button>
                                 </div>
@@ -201,6 +230,8 @@ class InstrumentedTargetAppHandler(BaseHTTPRequestHandler):
                     </body>
                 </html>
                 """
+                # Inject the requested fault (if any) before serving the page.
+                html = _apply_break(html, break_mode)
                 self.wfile.write(bytes(html, "utf-8"))
 
         # Route: serve the browser self-healing agent verbatim from disk

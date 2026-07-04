@@ -66,7 +66,7 @@ class SelfHealingWebDriver:
 
             # ACTIVE request path: synchronous heal that returns a decision so we
             # can keep driving the browser (see handlers.handle_active_heal).
-            lifecycle, query_locator, confidence, match_id = handle_active_heal(
+            lifecycle, query_locator, confidence, match_id, best_candidate = handle_active_heal(
                 self.engine, broken_identity, discovered_candidates
             )
 
@@ -84,15 +84,28 @@ class SelfHealingWebDriver:
                 tier = "Auto-Heal" if lifecycle == "continue" else "Cautious Heal (flagged for review)"
                 print(f"✨ {tier}! Rerouting to '{query_locator}' (Confidence: {confidence}%)")
 
-                try:
-                    element = self.driver.find_element(By.CSS_SELECTOR, query_locator)
-                except NoSuchElementException:
-                    # Heal pointed at nothing -> count as a failure for the loop guard.
-                    count, escalated = feedback.record_failure(value)
-                    raise NoSuchElementException(
-                        f"Heal candidate not found in DOM ({count} consecutive fails). "
-                        f"{'Escalated.' if escalated else ''}"
-                    )
+                # Re-grab the healed element. Prefer the winning LIVE candidate's
+                # freshly-scraped xpath: renaming a class/id/attribute does not move
+                # the element, so its xpath stays valid even when the attribute the
+                # old selector used is the one that changed. Fall back to the css
+                # selector built from the golden fingerprint (the id-rename path).
+                element = None
+                live_xpath = (best_candidate or {}).get("xpath")
+                if live_xpath:
+                    try:
+                        element = self.driver.find_element(By.XPATH, live_xpath)
+                    except NoSuchElementException:
+                        element = None
+                if element is None:
+                    try:
+                        element = self.driver.find_element(By.CSS_SELECTOR, query_locator)
+                    except NoSuchElementException:
+                        # Heal pointed at nothing -> count as a failure for the loop guard.
+                        count, escalated = feedback.record_failure(value)
+                        raise NoSuchElementException(
+                            f"Heal candidate not found in DOM ({count} consecutive fails). "
+                            f"{'Escalated.' if escalated else ''}"
+                        )
 
                 # Verify (post-heal validation) + reset/track the loop counter.
                 feedback.verify_and_record(value, element)

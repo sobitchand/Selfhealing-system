@@ -1,4 +1,4 @@
-"""
+    """
 Capture real PNG screenshots (headless Chrome) of the running stack:
   - the Pomodoro target app page (the Application-Under-Test)
   - each of the 4 dashboard tabs (UI Heuristic / Locator Self-Correction /

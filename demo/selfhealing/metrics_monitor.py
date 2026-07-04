@@ -66,8 +66,14 @@ class MetricsMonitor:
                 "error_rate_percent": error_rate
             }
             
-            # Reset sliding frequency rates
+            # Reset sliding-window counters so the next snapshot reflects only the
+            # last interval. Without resetting error_count/total_requests they grow
+            # monotonically: one burst of /error keeps error_rate pinned high
+            # forever, so the infra healer would log a "fix" every 2s indefinitely
+            # (dashboard spam). Sliding window => errors decay once traffic is clean.
             self.traffic_rate = 0
+            self.error_count = 0
+            self.total_requests = 0
             
             # Commit entry to telemetry file store
             self._write_snapshot(snapshot)
@@ -97,17 +103,37 @@ class MetricsMonitor:
                 if len(data) > 100:
                     data = data[-100:]
                 
-                # Write to a temporary file first to avoid corruption if interrupted mid-write
-                temp_path = self.history_path + ".tmp"
+                # Write to a temporary file first to avoid corruption if interrupted
+                # mid-write. Tag the tmp name with the PID: multiple processes
+                # (target app + collector) each run a monitor thread, and a shared
+                # ".tmp" name would let them clobber each other's partial writes.
+                temp_path = "{}.{}.tmp".format(self.history_path, os.getpid())
                 os.makedirs(os.path.dirname(self.history_path), exist_ok=True)
                 with open(temp_path, "w") as f:
                     json.dump(data, f, indent=2)
-                
-                # Atomically replace the old historical data file with the new one
-                os.replace(temp_path, self.history_path)
-                
+
+                # Atomically replace the old historical data file with the new one.
+                # threading.Lock only guards threads in THIS process; other processes
+                # writing the same file race us. On Windows os.replace raises
+                # PermissionError (WinError 5) when the destination is briefly held
+                # open by another process — retry with backoff instead of crashing.
+                for attempt in range(5):
+                    try:
+                        os.replace(temp_path, self.history_path)
+                        break
+                    except PermissionError:
+                        if attempt == 4:
+                            raise
+                        time.sleep(0.1)
+
             except Exception as e:
                 print(f"❌ Critical error inside metrics snapshot writer: {str(e)}")
+                # Don't leak the per-PID tmp file if the replace ultimately failed.
+                try:
+                    if os.path.exists(temp_path):
+                        os.remove(temp_path)
+                except Exception:
+                    pass
 
 # Instantiate the library global monitor object
 monitor = MetricsMonitor()

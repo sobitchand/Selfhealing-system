@@ -88,15 +88,21 @@ class UIHeuristicEngine:
         best_match_id = None
         highest_score = 0.0
         winning_metrics = {}
+        best_candidate = None
 
         # Intent-aware: resolve WHICH element this broken locator meant, so two
-        # different broken locators don't both heal to the same top element. If
-        # no fingerprint is similar enough, fall back to scanning all of them.
+        # different broken locators don't both heal to the same top element.
+        #
+        # Safety gate: if NO baseline fingerprint resembles the broken locator, we
+        # genuinely don't know what the caller was trying to find. Refuse to guess.
+        # (A global scan would otherwise always self-match SOME live element at
+        # ~98% — e.g. a random <div> — and "heal" to it, defeating the whole
+        # CRITICAL-FAULT safety story.) Returning no match keeps confidence at 0
+        # so commit_heal_to_log routes to 'halt' / manual intervention.
         target_key, _ = self.select_target_fingerprint(broken_selector)
-        if target_key:
-            search_space = {target_key: self.fingerprints[target_key]}
-        else:
-            search_space = self.fingerprints
+        if not target_key:
+            return None, 0.0, {}, None
+        search_space = {target_key: self.fingerprints[target_key]}
 
         for element_key, golden in search_space.items():
             for cand in candidates:
@@ -118,6 +124,7 @@ class UIHeuristicEngine:
                 if composite_score > highest_score:
                     highest_score = composite_score
                     best_match_id = element_key
+                    best_candidate = cand  # remember the LIVE element that won
                     winning_metrics = {
                         "R1_text_40": round(r1, 2),
                         "R2_xpath_30": round(r2, 2),
@@ -125,7 +132,7 @@ class UIHeuristicEngine:
                         "R4_neighbors_10": round(r4, 2),
                     }
 
-        return best_match_id, highest_score, winning_metrics
+        return best_match_id, highest_score, winning_metrics, best_candidate
 
     def canonical_locator(self, match_id):
         """Stable write-back token for a matched fingerprint.
