@@ -27,13 +27,11 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 
-# --headed / --show -> run a VISIBLE Chrome window with pauses so an audience can
-# watch the break + heal happen live. Default stays headless (fast / CI).
+
 HEADED = ("--headed" in sys.argv) or ("--show" in sys.argv)
 PAUSE = 2.0 if HEADED else 0.0  # seconds to linger so the eye can follow
 
-# Reuse the cached-chromedriver resolver so this suite gets the same
-# network-free startup fix as the main demo runner.
+
 from run_selenium_heal import _resolve_chromedriver
 from automation_wrapper import SelfHealingWebDriver
 import learning_mode
@@ -41,10 +39,6 @@ import config
 
 TARGET_URL = "http://127.0.0.1:8000"
 
-# Each scenario: a developer change to the app, the stale locator it breaks, and
-# what the healed element must turn out to be. The broken locators live here
-# (not in config.SOURCE_HEAL_TARGETS), so source write-back never mutates them
-# and the suite stays repeatable.
 SCENARIOS = [
     {
         "name": "CSS class renamed  (btn-main -> btn-primary)",
