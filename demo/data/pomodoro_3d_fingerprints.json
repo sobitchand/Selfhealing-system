@@ -193,7 +193,9 @@
         "tag_name": "div",
         "text": "0 Pomodoros"
       }
-    ]
+    ],
+    "healed_locator_value": "#stat-pomodoros",
+    "healed_locator_by": "css selector"
   },
   "session-log": {
     "key": "session-log",

@@ -328,5 +328,101 @@
     "severity": "critical",
     "message": "Repeated heal failure (3x) for locator textarea. Auto-intervention halted to prevent infinite recovery loop. Manual administrator review required.",
     "source": "FeedbackLoop"
+  },
+  {
+    "timestamp": "2026-07-27T10:44:32.733987+00:00",
+    "severity": "critical",
+    "message": "Recovery declined for tag name='button': best match scored 0.0%, below the 20% safety gate. No element was clicked.",
+    "source": "UIHeuristicEngine"
+  },
+  {
+    "timestamp": "2026-07-27T10:44:32.757028+00:00",
+    "severity": "critical",
+    "message": "Recovery declined for tag name='a': best match scored 0.0%, below the 20% safety gate. No element was clicked.",
+    "source": "UIHeuristicEngine"
+  },
+  {
+    "timestamp": "2026-07-27T10:44:32.786821+00:00",
+    "severity": "critical",
+    "message": "Recovery declined for tag name='select': best match scored 0.0%, below the 20% safety gate. No element was clicked.",
+    "source": "UIHeuristicEngine"
+  },
+  {
+    "timestamp": "2026-07-27T10:44:32.884274+00:00",
+    "severity": "critical",
+    "message": "Recovery declined for id='start-btn': best match scored 0.0%, below the 20% safety gate. No element was clicked.",
+    "source": "UIHeuristicEngine"
+  },
+  {
+    "timestamp": "2026-07-27T10:44:32.954844+00:00",
+    "severity": "critical",
+    "message": "Recovery declined for id='start-btn': best match scored 0.0%, below the 20% safety gate. No element was clicked.",
+    "source": "UIHeuristicEngine"
+  },
+  {
+    "timestamp": "2026-07-27T10:44:33.496613+00:00",
+    "severity": "critical",
+    "message": "Recovery declined for id='start-btn': best match scored 0.0%, below the 20% safety gate. No element was clicked.",
+    "source": "UIHeuristicEngine"
+  },
+  {
+    "timestamp": "2026-07-27T10:44:33.502628+00:00",
+    "severity": "critical",
+    "message": "Locator 'start-btn' failed to heal 3 times in a row. Auto-healing is now disabled for it so the run cannot loop; it needs a look by hand.",
+    "source": "FeedbackLoop"
+  },
+  {
+    "timestamp": "2026-07-27T10:44:43.387263+00:00",
+    "severity": "critical",
+    "message": "Recovery declined for id='btn-short': best match scored 0.0%, below the 20% safety gate. No element was clicked.",
+    "source": "UIHeuristicEngine"
+  },
+  {
+    "timestamp": "2026-07-27T10:44:43.907056+00:00",
+    "severity": "critical",
+    "message": "Recovery declined for id='btn-short': best match scored 0.0%, below the 20% safety gate. No element was clicked.",
+    "source": "UIHeuristicEngine"
+  },
+  {
+    "timestamp": "2026-07-27T10:44:44.425510+00:00",
+    "severity": "critical",
+    "message": "Recovery declined for id='btn-short': best match scored 0.0%, below the 20% safety gate. No element was clicked.",
+    "source": "UIHeuristicEngine"
+  },
+  {
+    "timestamp": "2026-07-27T10:44:44.431203+00:00",
+    "severity": "critical",
+    "message": "Locator 'btn-short' failed to heal 3 times in a row. Auto-healing is now disabled for it so the run cannot loop; it needs a look by hand.",
+    "source": "FeedbackLoop"
+  },
+  {
+    "timestamp": "2026-07-27T10:45:45.999049+00:00",
+    "severity": "critical",
+    "message": "Recovery declined for tag name='button': best match scored 0.0%, below the 20% safety gate. No element was clicked.",
+    "source": "UIHeuristicEngine"
+  },
+  {
+    "timestamp": "2026-07-27T10:45:46.019918+00:00",
+    "severity": "critical",
+    "message": "Recovery declined for tag name='a': best match scored 0.0%, below the 20% safety gate. No element was clicked.",
+    "source": "UIHeuristicEngine"
+  },
+  {
+    "timestamp": "2026-07-27T10:45:46.047989+00:00",
+    "severity": "critical",
+    "message": "Recovery declined for tag name='select': best match scored 0.0%, below the 20% safety gate. No element was clicked.",
+    "source": "UIHeuristicEngine"
+  },
+  {
+    "timestamp": "2026-07-27T10:48:02.737795+00:00",
+    "severity": "critical",
+    "message": "Recovery declined for tag name='input': best match scored 0.0%, below the 20% safety gate. No element was clicked.",
+    "source": "UIHeuristicEngine"
+  },
+  {
+    "timestamp": "2026-07-27T10:48:02.885196+00:00",
+    "severity": "critical",
+    "message": "Recovery declined for tag name='textarea': best match scored 0.0%, below the 20% safety gate. No element was clicked.",
+    "source": "UIHeuristicEngine"
   }
 ]

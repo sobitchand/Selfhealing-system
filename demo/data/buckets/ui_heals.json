@@ -1086,5 +1086,311 @@
         "R4_neighbors_10": 100.0
       }
     }
+  },
+  {
+    "timestamp": "2026-07-27T10:44:32.846499+00:00",
+    "broken_selector": "id='time-display'",
+    "recovered_selector": "div.time-big",
+    "healed_locator": "#time-display",
+    "confidence_score": 21.0,
+    "policy": "CAUTIOUS HEAL",
+    "status": "warning",
+    "details": {
+      "component_scores": {
+        "R1_text_40": 0.0,
+        "R2_xpath_30": 57.14,
+        "R3_css_20": 12.5,
+        "R4_neighbors_10": 13.54
+      }
+    }
+  },
+  {
+    "timestamp": "2026-07-27T10:44:32.926424+00:00",
+    "broken_selector": "id='time-display'",
+    "recovered_selector": "div.time-big",
+    "healed_locator": "#time-display",
+    "confidence_score": 21.0,
+    "policy": "CAUTIOUS HEAL",
+    "status": "warning",
+    "details": {
+      "component_scores": {
+        "R1_text_40": 0.0,
+        "R2_xpath_30": 57.14,
+        "R3_css_20": 12.5,
+        "R4_neighbors_10": 13.54
+      }
+    }
+  },
+  {
+    "timestamp": "2026-07-27T10:44:38.115827+00:00",
+    "broken_selector": "id='time-display'",
+    "recovered_selector": "div.time-big",
+    "healed_locator": "#time-display",
+    "confidence_score": 21.0,
+    "policy": "CAUTIOUS HEAL",
+    "status": "warning",
+    "details": {
+      "component_scores": {
+        "R1_text_40": 0.0,
+        "R2_xpath_30": 57.14,
+        "R3_css_20": 12.5,
+        "R4_neighbors_10": 13.54
+      }
+    }
+  },
+  {
+    "timestamp": "2026-07-27T10:44:43.250872+00:00",
+    "broken_selector": "id='time-display'",
+    "recovered_selector": "div.time-big",
+    "healed_locator": "#time-display",
+    "confidence_score": 21.0,
+    "policy": "CAUTIOUS HEAL",
+    "status": "warning",
+    "details": {
+      "component_scores": {
+        "R1_text_40": 0.0,
+        "R2_xpath_30": 57.14,
+        "R3_css_20": 12.5,
+        "R4_neighbors_10": 13.54
+      }
+    }
+  },
+  {
+    "timestamp": "2026-07-27T10:44:43.285125+00:00",
+    "broken_selector": "id='stat-pomodoros'",
+    "recovered_selector": "div.stat-val.accent",
+    "healed_locator": "#stat-pomodoros",
+    "confidence_score": 20.08,
+    "policy": "CAUTIOUS HEAL",
+    "status": "warning",
+    "details": {
+      "component_scores": {
+        "R1_text_40": 0.0,
+        "R2_xpath_30": 44.44,
+        "R3_css_20": 30.77,
+        "R4_neighbors_10": 5.88
+      }
+    }
+  },
+  {
+    "timestamp": "2026-07-27T10:44:43.355465+00:00",
+    "broken_selector": "id='time-display'",
+    "recovered_selector": "div.time-big",
+    "healed_locator": "#time-display",
+    "confidence_score": 21.0,
+    "policy": "CAUTIOUS HEAL",
+    "status": "warning",
+    "details": {
+      "component_scores": {
+        "R1_text_40": 0.0,
+        "R2_xpath_30": 57.14,
+        "R3_css_20": 12.5,
+        "R4_neighbors_10": 13.54
+      }
+    }
+  },
+  {
+    "timestamp": "2026-07-27T10:45:46.111902+00:00",
+    "broken_selector": "id='time-display'",
+    "recovered_selector": "div.time-big",
+    "healed_locator": "#time-display",
+    "confidence_score": 21.0,
+    "policy": "CAUTIOUS HEAL",
+    "status": "warning",
+    "details": {
+      "component_scores": {
+        "R1_text_40": 0.0,
+        "R2_xpath_30": 57.14,
+        "R3_css_20": 12.5,
+        "R4_neighbors_10": 13.54
+      }
+    }
+  },
+  {
+    "timestamp": "2026-07-27T10:45:46.187212+00:00",
+    "broken_selector": "id='time-display'",
+    "recovered_selector": "div.time-big",
+    "healed_locator": "#time-display",
+    "confidence_score": 21.0,
+    "policy": "CAUTIOUS HEAL",
+    "status": "warning",
+    "details": {
+      "component_scores": {
+        "R1_text_40": 0.0,
+        "R2_xpath_30": 57.14,
+        "R3_css_20": 12.5,
+        "R4_neighbors_10": 13.54
+      }
+    }
+  },
+  {
+    "timestamp": "2026-07-27T10:45:51.323865+00:00",
+    "broken_selector": "id='time-display'",
+    "recovered_selector": "div.time-big",
+    "healed_locator": "#time-display",
+    "confidence_score": 21.0,
+    "policy": "CAUTIOUS HEAL",
+    "status": "warning",
+    "details": {
+      "component_scores": {
+        "R1_text_40": 0.0,
+        "R2_xpath_30": 57.14,
+        "R3_css_20": 12.5,
+        "R4_neighbors_10": 13.54
+      }
+    }
+  },
+  {
+    "timestamp": "2026-07-27T10:45:56.465100+00:00",
+    "broken_selector": "id='time-display'",
+    "recovered_selector": "div.time-big",
+    "healed_locator": "#time-display",
+    "confidence_score": 21.0,
+    "policy": "CAUTIOUS HEAL",
+    "status": "warning",
+    "details": {
+      "component_scores": {
+        "R1_text_40": 0.0,
+        "R2_xpath_30": 57.14,
+        "R3_css_20": 12.5,
+        "R4_neighbors_10": 13.54
+      }
+    }
+  },
+  {
+    "timestamp": "2026-07-27T10:45:56.498400+00:00",
+    "broken_selector": "id='stat-pomodoros'",
+    "recovered_selector": "div.stat-val.accent",
+    "healed_locator": "#stat-pomodoros",
+    "confidence_score": 20.08,
+    "policy": "CAUTIOUS HEAL",
+    "status": "warning",
+    "details": {
+      "component_scores": {
+        "R1_text_40": 0.0,
+        "R2_xpath_30": 44.44,
+        "R3_css_20": 30.77,
+        "R4_neighbors_10": 5.88
+      }
+    }
+  },
+  {
+    "timestamp": "2026-07-27T10:45:56.563567+00:00",
+    "broken_selector": "id='time-display'",
+    "recovered_selector": "div.time-big",
+    "healed_locator": "#time-display",
+    "confidence_score": 21.0,
+    "policy": "CAUTIOUS HEAL",
+    "status": "warning",
+    "details": {
+      "component_scores": {
+        "R1_text_40": 0.0,
+        "R2_xpath_30": 57.14,
+        "R3_css_20": 12.5,
+        "R4_neighbors_10": 13.54
+      }
+    }
+  },
+  {
+    "timestamp": "2026-07-27T10:48:02.763156+00:00",
+    "broken_selector": "tag name='select'",
+    "recovered_selector": "button",
+    "healed_locator": "#reset-btn",
+    "confidence_score": 80.0,
+    "policy": "AUTOMATIC HEAL",
+    "status": "success",
+    "details": {
+      "component_scores": {
+        "R1_text_40": 100.0,
+        "R2_xpath_30": 100.0,
+        "R3_css_20": 0.0,
+        "R4_neighbors_10": 100.0
+      }
+    }
+  },
+  {
+    "timestamp": "2026-07-27T10:48:02.947257+00:00",
+    "broken_selector": "id='start-btn'",
+    "recovered_selector": "button.btn.btn-main",
+    "healed_locator": "#start-btn",
+    "confidence_score": 95.65,
+    "policy": "AUTOMATIC HEAL",
+    "status": "success",
+    "details": {
+      "component_scores": {
+        "R1_text_40": 100.0,
+        "R2_xpath_30": 100.0,
+        "R3_css_20": 78.26,
+        "R4_neighbors_10": 100.0
+      }
+    }
+  },
+  {
+    "timestamp": "2026-07-27T10:48:03.145662+00:00",
+    "broken_selector": "id='start-btn'",
+    "recovered_selector": "button.btn.btn-main",
+    "healed_locator": "#start-btn",
+    "confidence_score": 95.65,
+    "policy": "AUTOMATIC HEAL",
+    "status": "success",
+    "details": {
+      "component_scores": {
+        "R1_text_40": 100.0,
+        "R2_xpath_30": 100.0,
+        "R3_css_20": 78.26,
+        "R4_neighbors_10": 100.0
+      }
+    }
+  },
+  {
+    "timestamp": "2026-07-27T10:48:03.427175+00:00",
+    "broken_selector": "id='start-btn'",
+    "recovered_selector": "button.btn.btn-main",
+    "healed_locator": "#start-btn",
+    "confidence_score": 95.65,
+    "policy": "AUTOMATIC HEAL",
+    "status": "success",
+    "details": {
+      "component_scores": {
+        "R1_text_40": 100.0,
+        "R2_xpath_30": 100.0,
+        "R3_css_20": 78.26,
+        "R4_neighbors_10": 100.0
+      }
+    }
+  },
+  {
+    "timestamp": "2026-07-27T10:48:04.951731+00:00",
+    "broken_selector": "id='reset-btn'",
+    "recovered_selector": "button",
+    "healed_locator": "#reset-btn",
+    "confidence_score": 78.48,
+    "policy": "AUTOMATIC HEAL",
+    "status": "success",
+    "details": {
+      "component_scores": {
+        "R1_text_40": 100.0,
+        "R2_xpath_30": 100.0,
+        "R3_css_20": 0.0,
+        "R4_neighbors_10": 84.78
+      }
+    }
+  },
+  {
+    "timestamp": "2026-07-27T10:48:05.170839+00:00",
+    "broken_selector": "id='skip-btn'",
+    "recovered_selector": "button",
+    "healed_locator": "#skip-btn",
+    "confidence_score": 80.0,
+    "policy": "AUTOMATIC HEAL",
+    "status": "success",
+    "details": {
+      "component_scores": {
+        "R1_text_40": 100.0,
+        "R2_xpath_30": 100.0,
+        "R3_css_20": 0.0,
+        "R4_neighbors_10": 100.0
+      }
+    }
   }
 ]
