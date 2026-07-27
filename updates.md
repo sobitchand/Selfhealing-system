@@ -107,10 +107,16 @@ import selfheal
 selfheal.install()
 ```
 
-Patches `find_element`/`find_elements` on both `WebDriver` and `WebElement`, so
-nested page-object lookups heal too. Because `WebDriverWait`'s expected
-conditions call `find_element` internally, **explicit waits heal instead of
-timing out**. `selfheal.uninstall()` restores stock Selenium.
+Patches `find_element` on both `WebDriver` and `WebElement`, so nested
+page-object lookups heal too. Because `WebDriverWait`'s expected conditions call
+`find_element` internally, **explicit waits heal instead of timing out**.
+`selfheal.uninstall()` restores stock Selenium.
+
+`find_elements` healing is opt-in — `selfheal.install(heal_find_elements=True)`.
+An empty list is a legitimate answer to `find_elements`, not a failure signal, so
+healing it by default converts every true absence into a false match. Learning
+Mode also runs with healing suppressed, so the baseline scan cannot generate
+heals of its own.
 
 ```powershell
 python tests/runner.py                    # baseline  -> 1/5
@@ -218,7 +224,8 @@ Then: `python demo.py --dashboard`.
 | `BASELINE_URL` | conftest | known-good build to learn fingerprints from |
 | `RELEARN_BASELINE=1` | conftest | force a fresh baseline scan |
 | `QA_TIMEOUT` | page object | explicit-wait timeout in seconds (default 5) |
-| `TARGET_APP_PORT` | target app | port to bind (default 8000) |
+| `TARGET_APP_PORT` | target app, scenario scripts | port to bind / connect to (default 8000) |
+| `TARGET_URL` | scenario scripts | full override for the application URL |
 | `DASH_NO_REFRESH=1` | dashboard | freeze the page, no auto-refresh |
 
 ---
@@ -226,13 +233,18 @@ Then: `python demo.py --dashboard`.
 ## 9. Troubleshooting
 
 **Every test fails, including ones that should pass.**
-Something else is on port 8000. `demo.py` now verifies the page really is the
-Pomodoro app before reusing a port, and falls back to 8010/8020/8030 with a
-printed notice — but if you started `demo_target_app.py` by hand, check first:
+Something else is on port 8000. `demo.py` verifies the page really is the
+Pomodoro app before reusing a port and falls back to 8010/8020/8030 with a
+printed notice, so it handles this by itself. The standalone scenario scripts
+(`run_qa_heal.py`, `run_selenium_heal.py`, `demo_show.py`) connect to whatever
+`TARGET_APP_PORT` says, so tell them where the app is:
 
 ```powershell
-curl http://127.0.0.1:8000/ | Select-String "Pomodoro"
-python demo_target_app.py 8010          # or bind elsewhere
+curl http://127.0.0.1:8000/ | Select-String "Pomodoro"    # is it ours?
+
+$env:TARGET_APP_PORT = "8010"
+python demo_target_app.py 8010
+python run_qa_heal.py                                      # now uses :8010
 ```
 
 **"Self-healing locked for 'X' after repeated failures."**

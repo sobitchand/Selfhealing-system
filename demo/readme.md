@@ -132,11 +132,17 @@ Three integration levels, all sharing one heal core:
 | **2 — zero-touch patch** | `import selfheal; selfheal.install()` | 1 line, anywhere in setup |
 | **3 — pytest** | `pytest tests/ --self-heal` | none |
 
-Level 2 patches `find_element`/`find_elements` on both `WebDriver` and
-`WebElement`, so nested page-object lookups are covered — and because
-`WebDriverWait`'s expected conditions call `find_element` internally, **explicit
-waits heal too** instead of timing out. Level 1 delegates every non-lookup call
-to the real driver, so the wrapper is substitutable for one.
+Level 2 patches `find_element` on both `WebDriver` and `WebElement`, so nested
+page-object lookups are covered — and because `WebDriverWait`'s expected
+conditions call `find_element` internally, **explicit waits heal too** instead of
+timing out. Level 1 delegates every non-lookup call to the real driver, so the
+wrapper is substitutable for one.
+
+`find_elements` healing exists but is **off by default**
+(`selfheal.install(heal_find_elements=True)` enables it). An empty list is a
+legitimate answer to `find_elements` — "no error banners on screen" — not a
+failure signal the way a raised `NoSuchElementException` is, so healing it turns
+every true absence into a false match.
 
 ### The one-command demonstration
 
