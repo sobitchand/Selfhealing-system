@@ -24,7 +24,7 @@ import urllib.request
 import config
 
 PY = sys.executable  # same interpreter that launched this script
-TARGET_URL = "http://127.0.0.1:8000"
+TARGET_URL = config.TARGET_URL
 DASHBOARD_URL = "http://localhost:8501"
 LOCATOR_RE = re.compile(r"^.*BROKEN_LOCATOR\s*=.*$", re.MULTILINE)
 
