@@ -12,7 +12,27 @@ def _apply_break(html, mode):
     preserved, so the golden fingerprint still recognises the element.
 
     Modes: 'css' (rename class), 'id' (rename id), 'attr' (rename data-action),
-    'all' (apply all three). Anything else returns the page unchanged."""
+    'all' (apply all three), 'refactor' (see below). Anything else returns the
+    page unchanged."""
+    if mode == "refactor":
+        # A realistic sprint refactor: the developer renames identifiers
+        # CONSISTENTLY, so the application still works perfectly -- the timer
+        # ticks, the buttons respond, a human user notices nothing. The only
+        # casualty is the QA suite, whose locators now point at nothing. This is
+        # how locator rot actually happens, and it is the scenario the healing
+        # layer exists for. (The 'id'/'all' modes above rename markup only, which
+        # also breaks the app's own JS -- fine for a locator demo, not for one
+        # that asserts real behaviour.)
+        for old, new in (
+            ("start-btn", "btn-start-primary"),
+            ("reset-btn", "btn-reset-secondary"),
+            ("skip-btn", "btn-skip-forward"),
+            ("btn-focus", "mode-focus-tab"),
+            ("btn-main", "btn-cta"),
+            ('data-action="start"', 'data-action="begin"'),
+        ):
+            html = html.replace(old, new)
+        return html
     if mode == "css":
         return html.replace('class="btn btn-main"', 'class="btn btn-primary"')
     if mode == "id":
