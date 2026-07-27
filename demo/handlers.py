@@ -52,7 +52,7 @@ def handle_passive_event(event):
         store.append("alerts", {
             "timestamp": timestamp,
             "severity": "warning",
-            "message": f"Browser Application Anomaly ({event_type}): {event.get('message')}",
+            "message": f"Browser reported a {event_type.replace('_', ' ')}: {event.get('message')}",
             "source": f"JSBrowserAgent ({event.get('appName', 'Static App')})",
         })
 
