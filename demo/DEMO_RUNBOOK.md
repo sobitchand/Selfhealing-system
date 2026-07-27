@@ -1,137 +1,132 @@
-# Demo Runbook — Self-Healing System (all cases)
+# Demo Runbook — Self-Healing System
 
-Cold start to every heal case. Run top to bottom.
-
----
-
-## 0. Open 4 terminals — each one first runs:
-
-```powershell
-cd C:\Users\Acer\Downloads\selfhealing\demo
-./venv/Scripts/activate
-```
-
-## 1. Start 3 services (leave running)
-
-**Terminal A — dashboard:**
-```powershell
-python -m streamlit run dashboard.py
-```
-Open **http://localhost:8501** and keep it visible.
-
-**Terminal B — collector** (receives browser-agent events):
-```powershell/cd demo
-python collector_server.py
-```
-
-**Terminal C — target app** (serves the page + runs the infra monitor every 2s):
-```powershell
-python demo_target_app.py
-```
-Wait for `Mock Target Web Application live`. **Terminal D** is where you run the cases.
+**The whole demonstration is one command.** Everything below the fold is
+optional material for questions.
 
 ---
 
-## 2. Cases (Terminal D, in order)
+## The demo
 
-### A — App-breakage QA suite ⭐ (headline)
-One command. Breaks the **app** four different ways and heals all of them.
 ```powershell
-python run_qa_heal.py
+cd demo
+python demo.py --dashboard
 ```
-Expected: `RESULT: 4/4 scenarios healed.` Dashboard tab **UI Heuristic Healing**
-gains 4 rows.
 
-The four scenarios mutate the START button the way a developer might:
+That starts the application under test, then runs the **same unmodified QA
+suite twice** against the **same refactored build**:
 
-| Scenario | App change | Stale locator that errors |
-|----------|-----------|---------------------------|
-| CSS class renamed | `btn-main` → `btn-primary` | `.btn-main` |
-| Element id renamed | `start-btn` → `start-btn-v2` | `#start-btn` |
-| Data attribute changed | `data-action="start"` → `"begin"` | `[data-action='start']` |
-| Multiple at once | class + id + attribute | `.btn-main` |
+| | |
+|---|---|
+| **Run 1 — baseline** | stock Selenium. Locators have rotted. **1/5 pass.** |
+| **Run 2 — healed** | identical suite, `selfheal.install()` added. **5/5 pass.** |
 
-Say: "A dev refactors the app — renames a class, an id, an attribute. A normal
-test crashes with NoSuchElementException. The healer scrapes the live DOM, scores
-every element against the golden fingerprint (text + structure + neighbours),
-recognises the START button despite the changed attribute, re-grabs it by its
-live position, and logs the heal. Zero test edits."
+Test files, page objects and the application are byte-identical between the two
+runs. The only variable is whether the healing layer is installed — which is
+what makes it evidence rather than a demo.
 
-Optional visual: open `http://127.0.0.1:8000/?break=css` (or `id`, `attr`, `all`)
-in Chrome → View Source shows the changed markup.
+Expected output ends with:
 
-### B — Locator heal, AUTOMATIC
-Confirm `run_selenium_heal.py` line 43 is `(By.ID, "start-btn")`, then:
-```powershell
-python run_selenium_heal.py
 ```
-→ tab **UI Heuristic Healing**: AUTOMATIC HEAL with R1–R4 scores.
+  Baseline .................. 1/5 passed
+  With self-healing layer ... 5/5 passed
+  Tests recovered ........... 4
+  Locator heals performed ... 5  (mean ~35ms each)
+  Suite wall-clock .......... 16.9s → 2.8s
+  Test code changed ......... 0 lines
+```
 
-### C — Source self-heal (the source file rewrites itself)
-```powershell
-python demo_show.py
-```
-Press Enter at each gate. Terminal shows `BEFORE old-start-btn → AFTER start-btn`;
-tab **Locator Self-Correction** gets a write-back row.
-Re-arm for the next run: `python demo_show.py --reset`
-
-### D — Intent-aware (heals a *different* element)
-Edit `run_selenium_heal.py` line 43 and save:
-```python
-BROKEN_LOCATOR = (By.ID, "focus-mode-btn")
-```
-```powershell
-python run_selenium_heal.py
-```
-→ recovered element is **Focus**, not START (engine is not hardcoded to one button).
-
-### E — CRITICAL FAULT (low confidence, safe halt)
-Edit line 43 and save:
-```python
-BROKEN_LOCATOR = (By.ID, "zzz-nonexistent-999")
-```
-```powershell
-python run_selenium_heal.py
-```
-→ tab **Alert Notification Logs**: critical "recovery aborted". No source edit.
-Then set line 43 back to `(By.ID, "start-btn")`.
-
-### F — Infrastructure heal
-```powershell
-python simulate_infra_heal.py
-```
-→ tab **Server Infrastructure Heals**: a fix row.
-
-Real-stress alternative (auto-heals via the monitor):
-```powershell
-1..8 | ForEach-Object { try { Invoke-WebRequest http://127.0.0.1:8000/error -UseBasicParsing } catch {} }
-```
-Wait ~4s → the same tab fills by itself.
-
-### G — Browser resource heal (broken image)
-Open **http://127.0.0.1:8000** in normal Chrome (collector in Terminal B must be up).
-→ tab **Alert Notification Logs**: "Browser Application Anomaly (resource_failure)".
+Add `--headed` to watch Chrome do it.
 
 ---
 
-## 3. Reset after the demo
-```powershell
-python demo_show.py --reset
-```
-Confirm `run_selenium_heal.py` line 43 is `(By.ID, "start-btn")`.
+## The 90-second talk track
+
+1. **"This is an ordinary Selenium QA suite."** Open `tests/test_pomodoro.py`
+   and `tests/pages/pomodoro_page.py`. Page objects, explicit waits, assertions
+   on real behaviour. Nothing in either file mentions self-healing.
+
+2. **"A developer refactored the app."** `demo_target_app.py` `?break=refactor`
+   renames `start-btn → btn-start-primary`, `reset-btn → btn-reset-secondary`,
+   `skip-btn → btn-skip-forward`, `btn-main → btn-cta`, `data-action` value.
+   The renames are **consistent**, so the application still works perfectly —
+   the timer ticks, buttons respond, a human user notices nothing. Only QA's
+   recorded locators have rotted. *That is how locator rot actually happens.*
+
+3. **"Run 1: the suite collapses."** 4 of 5 tests fail — `NoSuchElementException`
+   and `TimeoutException`. Note that the failing run is also **6× slower**,
+   because every broken locator burns its full wait timeout. This is the real
+   cost of locator rot: red builds *and* slow builds.
+
+4. **"Run 2: one line of integration."**
+
+   ```python
+   import selfheal
+   selfheal.install()
+   ```
+
+   Same suite. 5/5. Each heal prints the broken locator, the element the engine
+   recovered, the confidence, and the policy applied.
+
+5. **"How does it decide?"** Point at the confidence column. `start-btn` heals
+   at 95.65% because text and structure are untouched and only the class moved;
+   `reset-btn` at 78.48% because it has no class at all, so R3 contributes
+   nothing. Both clear the 75% automatic gate. That is Table 3.1 doing visible
+   work — not a black box.
+
+6. **"And when it shouldn't act?"** → optional case E below.
 
 ---
 
-## Suggested order on screen
-**A → B → C → D → E → F → G**
-(app-breakage suite → live heal → permanent fix → intelligence → safety → infra → client)
+## The three integration levels
 
-Only manual edits are line 43 for cases **D** and **E**. Everything else is
-zero-edit. Case **A** is the strongest — it shows the *app* changing, not just a
-missing id.
+Show whichever the panel asks about.
+
+| Level | Integration | Lines the QA team changes |
+|-------|-------------|---------------------------|
+| 1 | `driver = SelfHealingWebDriver(webdriver.Chrome())` | 1 |
+| 2 | `import selfheal; selfheal.install()` | 1, anywhere in setup |
+| 3 | `pytest tests/ --self-heal` | 0 |
+
+Level 2 patches Selenium's own `find_element` / `find_elements` on both
+`WebDriver` and `WebElement`, so nested page-object lookups and explicit waits
+are covered too. Level 1 is a transparent proxy — every non-lookup call is
+delegated untouched, so it is substitutable for a real driver.
+
+```powershell
+# level 3, if pytest is installed
+pytest tests/                # 1/5 — stock Selenium
+pytest tests/ --self-heal    # 5/5 — same files
+```
+
+---
+
+## Optional cases (only if asked)
+
+Start the services first — dashboard on :8501, collector on :8766, app on :8000:
+
+```powershell
+python -m streamlit run dashboard.py     # terminal A
+python collector_server.py               # terminal B
+python demo_target_app.py                # terminal C
+```
+
+| | Case | Command | Shows |
+|---|------|---------|-------|
+| **E** | **Safety halt** | set `run_selenium_heal.py` line 43 to `(By.ID, "zzz-nonexistent-999")`, run `python run_selenium_heal.py` | confidence < 20% → refuses to act, CRITICAL row in **Alert Notification Logs**. *The system knows when not to guess.* |
+| **D** | Intent-aware | line 43 → `(By.ID, "btn-focus")` | heals to **Focus**, not START — the engine is not hardcoded to one element |
+| **C** | Source write-back | `python demo_show.py` | the broken locator is rewritten in the test source; **Locator Self-Correction** tab. Re-arm with `--reset` |
+| **A** | Attribute-level suite | `python run_qa_heal.py` | 4 single-attribute faults (class / id / data-attr / all), 4/4 healed |
+| **F** | Infrastructure heal | `python simulate_infra_heal.py` | **Server Infrastructure Heals** tab |
+| **G** | Browser agent | open http://127.0.0.1:8000 in Chrome | broken image → **Alert Notification Logs** |
+
+After case C or E, reset: `python demo_show.py --reset`, then set line 43 back
+to `(By.ID, "start-btn")`.
+
+---
 
 ## Dashboard tabs
-- 🔗 **UI Heuristic Healing** — locator heals + R1–R4 confidence scores
-- 📝 **Locator Self-Correction** — source-code write-back log
+
+- 🔗 **UI Heuristic Healing** — locator heals + R1–R4 confidence breakdown
+- 📝 **Locator Self-Correction** — source write-back log
 - ⚙️ **Server Infrastructure Heals** — infra anomaly fixes
 - 🚨 **Alert Notification Logs** — critical faults, resource failures, escalations
