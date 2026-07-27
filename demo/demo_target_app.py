@@ -283,11 +283,15 @@ class InstrumentedTargetAppHandler(BaseHTTPRequestHandler):
             self.send_response(404)
             self.end_headers()
 
-def run_server():
-    server_address = ("127.0.0.1", 8000)
+def run_server(port=None):
+    # Port is overridable so the demo can step aside when something else already
+    # owns 8000 (a stray dev server on the presenter's machine, say).
+    if port is None:
+        port = int(os.environ.get("TARGET_APP_PORT", "8000"))
+    server_address = ("127.0.0.1", port)
     httpd = HTTPServer(server_address, InstrumentedTargetAppHandler)
-    print("🌍 Mock Target Web Application live at http://127.0.0.1:8000")
-    print("👉 Visit http://127.0.0.1:8000/error a few times to simulate server stress.")
+    print(f"🌍 Mock Target Web Application live at http://127.0.0.1:{port}")
+    print(f"👉 Visit http://127.0.0.1:{port}/error a few times to simulate server stress.")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
@@ -295,4 +299,4 @@ def run_server():
         httpd.server_close()
 
 if __name__ == "__main__":
-    run_server()
+    run_server(int(sys.argv[1]) if len(sys.argv) > 1 else None)
