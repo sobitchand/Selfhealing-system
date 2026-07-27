@@ -39,14 +39,21 @@ def is_installed():
     return bool(_originals)
 
 
-def install(fingerprints=None):
+def install(fingerprints=None, heal_find_elements=False):
     """Patch Selenium in-process. Idempotent.
 
     fingerprints: optional path to a golden-fingerprint registry, so one runner
     can heal different applications against different baselines.
+
+    heal_find_elements: also heal find_elements when it returns an empty list.
+    Off by default -- an empty list is a legitimate answer ("no error banners
+    on screen"), so healing it converts every true absence into a false match.
+    Enable only for a suite whose find_elements calls are all expected to match.
     """
     if _originals:
         return False
+
+    _wrapper.HEAL_FIND_ELEMENTS = bool(heal_find_elements)
 
     if fingerprints:
         config.POMODORO_FINGERPRINTS_PATH = os.path.abspath(fingerprints)
@@ -67,7 +74,7 @@ def install(fingerprints=None):
 
     def driver_find_elements(self, by=None, value=None):
         found = _originals["driver_find_elements"](self, by, value)
-        if found or _wrapper.healing_in_progress():
+        if found or _wrapper.healing_in_progress() or not _wrapper.HEAL_FIND_ELEMENTS:
             return found
         return _wrapper.attempt_heal_list(self, by, value)
 
@@ -84,7 +91,7 @@ def install(fingerprints=None):
 
     def element_find_elements(self, by=None, value=None):
         found = _originals["element_find_elements"](self, by, value)
-        if found or _wrapper.healing_in_progress():
+        if found or _wrapper.healing_in_progress() or not _wrapper.HEAL_FIND_ELEMENTS:
             return found
         return _wrapper.attempt_heal_list(self, by, value)
 
@@ -126,9 +133,15 @@ def learn_baseline(driver, url=None, force=False):
 
     if url:
         driver.get(url)
-    if force:
-        captured = FingerprintManager(
-            driver, fingerprint_path=config.POMODORO_FINGERPRINTS_PATH
-        ).scan_interactive()
-        return captured
-    return learning_mode.ensure_fingerprints(driver, config.POMODORO_FINGERPRINTS_PATH)
+
+    # Learning must never heal. The scan probes for tags that may legitimately
+    # be absent, and healing those probes both invents matches and fills the
+    # dashboard with heals and alerts produced by our own discovery pass.
+    with _wrapper.suppressed():
+        if force:
+            return FingerprintManager(
+                driver, fingerprint_path=config.POMODORO_FINGERPRINTS_PATH
+            ).scan_interactive()
+        return learning_mode.ensure_fingerprints(
+            driver, config.POMODORO_FINGERPRINTS_PATH
+        )
