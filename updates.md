@@ -1,7 +1,7 @@
 # Operating Guide — Self-Healing System
 
 How to run everything in the project as it now stands, what each command proves,
-and what to do when something misbehaves. Branch: `feat/updates`.
+and what to do when something misbehaves.
 
 For the presentation script specifically, see
 [`demo/DEMO_RUNBOOK.md`](demo/DEMO_RUNBOOK.md) — that document is the talk track.
@@ -272,19 +272,37 @@ Nothing has healed yet. Run `python demo.py`, or check that the buckets under
 
 ---
 
-## 10. What changed on this branch
+## 10. What changed
 
 | Area | Before | Now |
 |------|--------|-----|
-| Wrapper | `find_element` only; not substitutable for a driver | full delegation, `find_elements`, re-entrancy guard, heal cache |
+| Wrapper | `find_element` only; not substitutable for a driver | full delegation, re-entrancy guard, heal cache |
 | Waits | `TimeoutException` never healed | heal inside `find_element`, so waits recover |
 | Integration | none | three levels: proxy / `install()` / `pytest --self-heal` |
 | Test suite | none | `tests/` — page objects, explicit waits, healing-agnostic |
 | Fault | markup-only rename that also broke the app's own JS | `?break=refactor`, consistent rename; app still works, only locators rot |
-| Heal cost | ~6 WebDriver round trips × 200 elements | one `execute_script`; mean heal ≈ 35ms |
+| Heal cost | ~6 WebDriver round trips × 200 elements | one `execute_script`; mean heal ≈ 30ms |
 | Demo | 4 terminals, 7 cases, manual edits | `python demo.py` |
 | Dashboard | dark, emoji headings, inflated labels | white, Libertinus Serif, plain language, Streamlit chrome hidden |
 | Port handling | assumed anything on :8000 was ours | verifies the app, falls back to 8010/8020/8030 |
+| False heals | Learning Mode's discovery scan was itself healed | learning runs suppressed; `find_elements` healing is opt-in |
+
+### The false-heal fix, in detail
+
+Worth knowing because it is the answer to "what if it heals the wrong thing?".
+
+From a clean reset the system used to log `tag name='select' → button` at 80%
+confidence as an AUTOMATIC HEAL — there is no `<select>` on the page — plus two
+critical alerts for `input` and `textarea`. `FingerprintManager.scan_interactive()`
+probes each interactive tag with `find_elements` while building the baseline, and
+with the layer installed those *discovery* probes were being healed. So the
+system was healing its own learning pass and inventing matches.
+
+Two changes: baseline learning now runs inside `automation_wrapper.suppressed()`,
+and `find_elements` healing became opt-in, because an empty list is a legitimate
+answer rather than a failure signal.
+
+A clean run now logs exactly 5 heals and 0 alerts.
 
 ---
 
