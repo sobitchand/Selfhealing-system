@@ -1,7 +1,7 @@
 # Operating Guide — Self-Healing System
 
 How to run everything in the project as it now stands, what each command proves,
-and what to do when something misbehaves. Branch: `feat/updates`.
+and what to do when something misbehaves.
 
 For the presentation script specifically, see
 [`demo/DEMO_RUNBOOK.md`](demo/DEMO_RUNBOOK.md) — that document is the talk track.
@@ -107,10 +107,16 @@ import selfheal
 selfheal.install()
 ```
 
-Patches `find_element`/`find_elements` on both `WebDriver` and `WebElement`, so
-nested page-object lookups heal too. Because `WebDriverWait`'s expected
-conditions call `find_element` internally, **explicit waits heal instead of
-timing out**. `selfheal.uninstall()` restores stock Selenium.
+Patches `find_element` on both `WebDriver` and `WebElement`, so nested
+page-object lookups heal too. Because `WebDriverWait`'s expected conditions call
+`find_element` internally, **explicit waits heal instead of timing out**.
+`selfheal.uninstall()` restores stock Selenium.
+
+`find_elements` healing is opt-in — `selfheal.install(heal_find_elements=True)`.
+An empty list is a legitimate answer to `find_elements`, not a failure signal, so
+healing it by default converts every true absence into a false match. Learning
+Mode also runs with healing suppressed, so the baseline scan cannot generate
+heals of its own.
 
 ```powershell
 python tests/runner.py                    # baseline  -> 1/5
@@ -218,7 +224,8 @@ Then: `python demo.py --dashboard`.
 | `BASELINE_URL` | conftest | known-good build to learn fingerprints from |
 | `RELEARN_BASELINE=1` | conftest | force a fresh baseline scan |
 | `QA_TIMEOUT` | page object | explicit-wait timeout in seconds (default 5) |
-| `TARGET_APP_PORT` | target app | port to bind (default 8000) |
+| `TARGET_APP_PORT` | target app, scenario scripts | port to bind / connect to (default 8000) |
+| `TARGET_URL` | scenario scripts | full override for the application URL |
 | `DASH_NO_REFRESH=1` | dashboard | freeze the page, no auto-refresh |
 
 ---
@@ -226,13 +233,18 @@ Then: `python demo.py --dashboard`.
 ## 9. Troubleshooting
 
 **Every test fails, including ones that should pass.**
-Something else is on port 8000. `demo.py` now verifies the page really is the
-Pomodoro app before reusing a port, and falls back to 8010/8020/8030 with a
-printed notice — but if you started `demo_target_app.py` by hand, check first:
+Something else is on port 8000. `demo.py` verifies the page really is the
+Pomodoro app before reusing a port and falls back to 8010/8020/8030 with a
+printed notice, so it handles this by itself. The standalone scenario scripts
+(`run_qa_heal.py`, `run_selenium_heal.py`, `demo_show.py`) connect to whatever
+`TARGET_APP_PORT` says, so tell them where the app is:
 
 ```powershell
-curl http://127.0.0.1:8000/ | Select-String "Pomodoro"
-python demo_target_app.py 8010          # or bind elsewhere
+curl http://127.0.0.1:8000/ | Select-String "Pomodoro"    # is it ours?
+
+$env:TARGET_APP_PORT = "8010"
+python demo_target_app.py 8010
+python run_qa_heal.py                                      # now uses :8010
 ```
 
 **"Self-healing locked for 'X' after repeated failures."**
@@ -260,19 +272,37 @@ Nothing has healed yet. Run `python demo.py`, or check that the buckets under
 
 ---
 
-## 10. What changed on this branch
+## 10. What changed
 
 | Area | Before | Now |
 |------|--------|-----|
-| Wrapper | `find_element` only; not substitutable for a driver | full delegation, `find_elements`, re-entrancy guard, heal cache |
+| Wrapper | `find_element` only; not substitutable for a driver | full delegation, re-entrancy guard, heal cache |
 | Waits | `TimeoutException` never healed | heal inside `find_element`, so waits recover |
 | Integration | none | three levels: proxy / `install()` / `pytest --self-heal` |
 | Test suite | none | `tests/` — page objects, explicit waits, healing-agnostic |
 | Fault | markup-only rename that also broke the app's own JS | `?break=refactor`, consistent rename; app still works, only locators rot |
-| Heal cost | ~6 WebDriver round trips × 200 elements | one `execute_script`; mean heal ≈ 35ms |
+| Heal cost | ~6 WebDriver round trips × 200 elements | one `execute_script`; mean heal ≈ 30ms |
 | Demo | 4 terminals, 7 cases, manual edits | `python demo.py` |
 | Dashboard | dark, emoji headings, inflated labels | white, Libertinus Serif, plain language, Streamlit chrome hidden |
 | Port handling | assumed anything on :8000 was ours | verifies the app, falls back to 8010/8020/8030 |
+| False heals | Learning Mode's discovery scan was itself healed | learning runs suppressed; `find_elements` healing is opt-in |
+
+### The false-heal fix, in detail
+
+Worth knowing because it is the answer to "what if it heals the wrong thing?".
+
+From a clean reset the system used to log `tag name='select' → button` at 80%
+confidence as an AUTOMATIC HEAL — there is no `<select>` on the page — plus two
+critical alerts for `input` and `textarea`. `FingerprintManager.scan_interactive()`
+probes each interactive tag with `find_elements` while building the baseline, and
+with the layer installed those *discovery* probes were being healed. So the
+system was healing its own learning pass and inventing matches.
+
+Two changes: baseline learning now runs inside `automation_wrapper.suppressed()`,
+and `find_elements` healing became opt-in, because an empty list is a legitimate
+answer rather than a failure signal.
+
+A clean run now logs exactly 5 heals and 0 alerts.
 
 ---
 

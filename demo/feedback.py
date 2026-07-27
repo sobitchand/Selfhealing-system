@@ -68,9 +68,9 @@ def record_failure(locator):
             "timestamp": _now(),
             "severity": "critical",
             "message": (
-                f"Repeated heal failure ({count}x) for locator {locator}. "
-                f"Auto-intervention halted to prevent infinite recovery loop. "
-                f"Manual administrator review required."
+                f"Locator '{locator}' failed to heal {count} times in a row. "
+                f"Auto-healing is now disabled for it so the run cannot loop; "
+                f"it needs a look by hand."
             ),
             "source": "FeedbackLoop",
         })

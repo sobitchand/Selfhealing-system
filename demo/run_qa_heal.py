@@ -37,7 +37,7 @@ from automation_wrapper import SelfHealingWebDriver
 import learning_mode
 import config
 
-TARGET_URL = "http://127.0.0.1:8000"
+TARGET_URL = config.TARGET_URL
 
 SCENARIOS = [
     {

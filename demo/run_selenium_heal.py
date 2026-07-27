@@ -39,8 +39,8 @@ from automation_wrapper import SelfHealingWebDriver
 import learning_mode
 import config
 
-TARGET_URL = "http://127.0.0.1:8000"
-BROKEN_LOCATOR = (By.ID, "start-btn")
+TARGET_URL = config.TARGET_URL
+BROKEN_LOCATOR = (By.ID, "old-start-btn")  # this id does NOT exist on the page
 
 def main():
     print("🌐 Launching headless Chrome runner...")

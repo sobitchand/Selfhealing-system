@@ -14,6 +14,13 @@ for _stream in (sys.stdout, sys.stderr):
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 
+# ---------------- Target application under test ----------------
+# Overridable so a demo can step aside when something else already owns 8000 on
+# the presenter's machine. demo.py picks a free port automatically and exports
+# TARGET_URL; the standalone scenario scripts read it from here.
+TARGET_APP_PORT = int(os.environ.get("TARGET_APP_PORT", "8000"))
+TARGET_URL = os.environ.get("TARGET_URL", f"http://127.0.0.1:{TARGET_APP_PORT}")
+
 # Absolute paths for data assets
 POMODORO_FINGERPRINTS_PATH = os.path.join(DATA_DIR, "pomodoro_3d_fingerprints.json")
 METRICS_HISTORY_PATH = os.path.join(DATA_DIR, "metrics_history.json")

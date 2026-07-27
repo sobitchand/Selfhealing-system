@@ -193,7 +193,11 @@ class UIHeuristicEngine:
             store.append("alerts", {
                 "timestamp": timestamp,
                 "severity": "critical",
-                "message": f"Locator recovery aborted. Dynamic match too low ({score}%). Locator: {broken_selector}",
+                "message": (
+                    f"Recovery declined for {broken_selector}: best match scored "
+                    f"{score:.1f}%, below the {config.CONFIDENCE_THRESHOLD_LOW:.0f}% "
+                    f"safety gate. No element was clicked."
+                ),
                 "source": "UIHeuristicEngine"
             })
         else:

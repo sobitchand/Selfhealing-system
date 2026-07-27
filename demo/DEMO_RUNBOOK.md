@@ -87,10 +87,16 @@ Show whichever the panel asks about.
 | 2 | `import selfheal; selfheal.install()` | 1, anywhere in setup |
 | 3 | `pytest tests/ --self-heal` | 0 |
 
-Level 2 patches Selenium's own `find_element` / `find_elements` on both
-`WebDriver` and `WebElement`, so nested page-object lookups and explicit waits
-are covered too. Level 1 is a transparent proxy — every non-lookup call is
-delegated untouched, so it is substitutable for a real driver.
+Level 2 patches Selenium's own `find_element` on both `WebDriver` and
+`WebElement`, so nested page-object lookups and explicit waits are covered too.
+Level 1 is a transparent proxy — every non-lookup call is delegated untouched, so
+it is substitutable for a real driver. (`find_elements` healing is opt-in: an
+empty list is a legitimate answer, so healing it by default would manufacture
+false matches.)
+
+If something else on the machine already owns port 8000, `demo.py` detects it and
+uses 8010 instead. For the standalone scripts below, set `TARGET_APP_PORT` to
+match.
 
 ```powershell
 # level 3, if pytest is installed
