@@ -27,14 +27,20 @@ import socket
 import subprocess
 import sys
 import time
+import urllib.error
+import urllib.request
 
 import config  # noqa: F401  (forces UTF-8 stdout on Windows consoles)
 
 DEMO_DIR = os.path.dirname(os.path.abspath(__file__))
 RUNNER = os.path.join(DEMO_DIR, "tests", "runner.py")
 APP = os.path.join(DEMO_DIR, "demo_target_app.py")
-BASE_URL = "http://127.0.0.1:8000"
 RESULT_MARKER = "##SELFHEAL_RESULT##"
+
+# A marker only our page carries, used to tell our application apart from
+# whatever else might be listening on the port.
+APP_FINGERPRINT = "Pomodoro 3D Focus Timer"
+PORT_CANDIDATES = [8000, 8010, 8020, 8030]
 
 RULE = "─" * 78
 
@@ -45,10 +51,22 @@ def port_open(port, host="127.0.0.1"):
         return s.connect_ex((host, port)) == 0
 
 
-def wait_for_port(port, timeout=25):
+def is_our_app(port):
+    """True only if the thing on `port` is the Pomodoro application. Checking
+    that the port is merely OPEN is not enough -- an unrelated dev server
+    squatting on 8000 would silently become the application under test, and the
+    suite would fail for reasons that have nothing to do with healing."""
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=3) as response:
+            return APP_FINGERPRINT in response.read(8192).decode("utf-8", "replace")
+    except (urllib.error.URLError, OSError, ValueError):
+        return False
+
+
+def wait_for_app(port, timeout=25):
     deadline = time.time() + timeout
     while time.time() < deadline:
-        if port_open(port):
+        if is_our_app(port):
             return True
         time.sleep(0.3)
     return False
@@ -96,23 +114,42 @@ def main():
                     help="fault to inject: refactor (default) | css | id | attr | all")
     args = ap.parse_args()
 
-    broken_url = f"{BASE_URL}/?break={args.break_mode}"
     spawned = []
 
     print(f"\n{RULE}\n  SELF-HEALING QA LAYER — baseline vs healed\n{RULE}")
 
+    # The three-strike loop guard persists to disk on purpose, so it survives
+    # across runs. That means a previous BAD run (wrong app on the port, target
+    # down) can leave a locator locked and silently sabotage the demo. Clear it.
+    heal_state = os.path.join(DEMO_DIR, "data", "heal_state.json")
+    if os.path.exists(heal_state):
+        os.remove(heal_state)
+        print("   cleared the loop-guard state from previous runs")
+
     # ---- application under test -------------------------------------------
-    if port_open(8000):
-        print("   application under test: already running on :8000")
+    port = next((p for p in PORT_CANDIDATES if is_our_app(p)), None)
+    if port:
+        print(f"   application under test: already running on :{port}")
     else:
-        print("   starting application under test on :8000 ...")
+        free = next((p for p in PORT_CANDIDATES if not port_open(p)), None)
+        if free is None:
+            print(f"❌ every candidate port is taken by something else: {PORT_CANDIDATES}")
+            sys.exit(1)
+        if free != PORT_CANDIDATES[0]:
+            print(f"   :{PORT_CANDIDATES[0]} is in use by another application; "
+                  f"using :{free} instead")
+        print(f"   starting application under test on :{free} ...")
         spawned.append(subprocess.Popen(
-            [sys.executable, APP], cwd=DEMO_DIR,
+            [sys.executable, APP, str(free)], cwd=DEMO_DIR,
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         ))
-        if not wait_for_port(8000):
-            print("❌ target application did not come up on :8000")
+        if not wait_for_app(free):
+            print(f"❌ target application did not come up on :{free}")
             sys.exit(1)
+        port = free
+
+    base_url = f"http://127.0.0.1:{port}"
+    broken_url = f"{base_url}/?break={args.break_mode}"
 
     if args.dashboard and not port_open(8501):
         print("   starting dashboard on :8501 ...")
@@ -132,7 +169,7 @@ def main():
         baseline = run_suite("baseline", ["--url", broken_url], args.headed)
         healed = run_suite("healed", [
             "--heal", "--url", broken_url,
-            "--baseline-url", BASE_URL, "--relearn",
+            "--baseline-url", base_url, "--relearn",
         ], args.headed)
 
         render("1. BASELINE — stock Selenium, no healing", baseline, show_heals=False)
