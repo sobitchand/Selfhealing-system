@@ -1,11 +1,11 @@
 {
   "start-btn": {
     "key": "start-btn",
-    "locator_by": "css selector",
-    "locator_value": "#start-btn",
+    "locator_by": "id",
+    "locator_value": "start-btn",
     "element_id": "start-btn",
     "inner_text": "START",
-    "xpath_pattern": "/html[1]/body[1]/div[1]/div[1]/div[2]/button[2]",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/div[1]/div[2]/button[1]",
     "css_class": "btn btn-main",
     "tag_name": "button",
     "neighbors": [
@@ -16,10 +16,6 @@
       {
         "tag_name": "button",
         "text": "Skip"
-      },
-      {
-        "tag_name": "div",
-        "text": "START"
       }
     ],
     "healed_locator_value": "#start-btn",
@@ -27,11 +23,11 @@
   },
   "btn-focus": {
     "key": "btn-focus",
-    "locator_by": "css selector",
-    "locator_value": "#btn-focus",
+    "locator_by": "id",
+    "locator_value": "btn-focus",
     "element_id": "btn-focus",
     "inner_text": "Focus",
-    "xpath_pattern": "/html[1]/body[1]/div[1]/header[1]/div[2]/button[1]",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/header[1]/div[1]/button[1]",
     "css_class": "active",
     "tag_name": "button",
     "neighbors": [
@@ -40,20 +36,18 @@
         "text": "Short Break"
       },
       {
-        "tag_name": "div",
-        "text": "Focus Short Break Long Break"
+        "tag_name": "button",
+        "text": "Long Break"
       }
-    ],
-    "healed_locator_value": "#btn-focus",
-    "healed_locator_by": "css selector"
+    ]
   },
   "btn-short": {
     "key": "btn-short",
-    "locator_by": "css selector",
-    "locator_value": "#btn-short",
+    "locator_by": "id",
+    "locator_value": "btn-short",
     "element_id": "btn-short",
     "inner_text": "Short Break",
-    "xpath_pattern": "/html[1]/body[1]/div[1]/header[1]/div[2]/button[2]",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/header[1]/div[1]/button[2]",
     "css_class": "",
     "tag_name": "button",
     "neighbors": [
@@ -64,32 +58,26 @@
       {
         "tag_name": "button",
         "text": "Long Break"
-      },
-      {
-        "tag_name": "div",
-        "text": "Focus Short Break Long Break"
       }
-    ],
-    "healed_locator_value": "#btn-short",
-    "healed_locator_by": "css selector"
+    ]
   },
   "btn-long": {
     "key": "btn-long",
-    "locator_by": "css selector",
-    "locator_value": "#btn-long",
+    "locator_by": "id",
+    "locator_value": "btn-long",
     "element_id": "btn-long",
     "inner_text": "Long Break",
-    "xpath_pattern": "/html[1]/body[1]/div[1]/header[1]/div[2]/button[3]",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/header[1]/div[1]/button[3]",
     "css_class": "",
     "tag_name": "button",
     "neighbors": [
       {
         "tag_name": "button",
-        "text": "Short Break"
+        "text": "Focus"
       },
       {
-        "tag_name": "div",
-        "text": "Focus Short Break Long Break"
+        "tag_name": "button",
+        "text": "Short Break"
       }
     ]
   },
@@ -227,6 +215,50 @@
       }
     ],
     "healed_locator_value": "#session-log",
+    "healed_locator_by": "css selector"
+  },
+  "reset-btn": {
+    "key": "reset-btn",
+    "locator_by": "id",
+    "locator_value": "reset-btn",
+    "element_id": "reset-btn",
+    "inner_text": "Reset",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/div[1]/div[2]/button[2]",
+    "css_class": "",
+    "tag_name": "button",
+    "neighbors": [
+      {
+        "tag_name": "button",
+        "text": "START"
+      },
+      {
+        "tag_name": "button",
+        "text": "Skip"
+      }
+    ],
+    "healed_locator_value": "#reset-btn",
+    "healed_locator_by": "css selector"
+  },
+  "skip-btn": {
+    "key": "skip-btn",
+    "locator_by": "id",
+    "locator_value": "skip-btn",
+    "element_id": "skip-btn",
+    "inner_text": "Skip",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/div[1]/div[2]/button[3]",
+    "css_class": "",
+    "tag_name": "button",
+    "neighbors": [
+      {
+        "tag_name": "button",
+        "text": "START"
+      },
+      {
+        "tag_name": "button",
+        "text": "Reset"
+      }
+    ],
+    "healed_locator_value": "#skip-btn",
     "healed_locator_by": "css selector"
   }
 }
