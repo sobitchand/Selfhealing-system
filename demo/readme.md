@@ -33,7 +33,7 @@ health and fires rule-based recovery actions (log rotation, worker reload, etc.)
 
 ---
 
-## 2. Architecture (5 layers, mapped to the proposal §3.1.2)
+## 2. Architecture (5 layers, mapped to the proposal 3.1.2)
 
 ```
 Request & Application Layer   demo_target_app.py      (Pomodoro AUT + UI + backend)
@@ -117,7 +117,56 @@ pip install -r requirements.txt
 
 ---
 
-## 5. How to run & show each step
+## 5. Using it on a real Selenium QA suite
+
+The healing layer is designed to be **bolted onto an existing test suite that
+knows nothing about it**. `tests/test_pomodoro.py` and `tests/pages/` are an
+ordinary page-object suite — explicit waits, behavioural assertions, zero
+healing imports — and they are run unchanged with and without the layer.
+
+Three integration levels, all sharing one heal core:
+
+| Level | Integration | Test-suite changes |
+|-------|-------------|--------------------|
+| **1 — transparent proxy** | `driver = SelfHealingWebDriver(webdriver.Chrome())` | 1 line |
+| **2 — zero-touch patch** | `import selfheal; selfheal.install()` | 1 line, anywhere in setup |
+| **3 — pytest** | `pytest tests/ --self-heal` | none |
+
+Level 2 patches `find_element`/`find_elements` on both `WebDriver` and
+`WebElement`, so nested page-object lookups are covered — and because
+`WebDriverWait`'s expected conditions call `find_element` internally, **explicit
+waits heal too** instead of timing out. Level 1 delegates every non-lookup call
+to the real driver, so the wrapper is substitutable for one.
+
+### The one-command demonstration
+
+```bash
+python demo.py --dashboard        # add --headed to watch Chrome
+```
+
+Runs the same suite twice against the same refactored build — once on stock
+Selenium, once with the layer installed:
+
+```
+  Baseline .................. 1/5 passed
+  With self-healing layer ... 5/5 passed
+  Tests recovered ........... 4
+  Locator heals performed ... 5  (mean ~35ms each)
+  Suite wall-clock .......... 16.9s → 2.8s
+  Test code changed ......... 0 lines
+```
+
+The fault injected is `?break=refactor`: ids, classes and a data attribute are
+renamed **consistently**, so the application still works perfectly for a human
+user — only the recorded locators have rotted. That is how locator rot happens
+in practice, and the failing baseline is also ~6× slower because every broken
+locator burns its full wait timeout.
+
+Full talk track in [`DEMO_RUNBOOK.md`](DEMO_RUNBOOK.md).
+
+---
+
+## 6. Running the individual scenarios
 
 Open the dashboard first and keep it visible:
 
@@ -205,10 +254,19 @@ narrated before/after source diff. Re-arm for another pass with
 
 ---
 
-## 6. Project layout
+## 7. Project layout
 
 ```
 demo/
+├── demo.py                   # ONE-COMMAND demo: baseline vs healed, same suite
+├── selfheal.py               # zero-touch integration (patches Selenium in place)
+├── tests/                    # ordinary QA suite — unaware of the healing layer
+│   ├── test_pomodoro.py      #   behavioural tests (start/pause/reset/skip/mode)
+│   ├── pages/pomodoro_page.py#   page object: locators + explicit waits
+│   ├── conftest.py           #   pytest fixture + --self-heal flag
+│   ├── runner.py             #   pytest-free runner (--heal / --headed)
+│   └── driver_factory.py     #   shared Chrome factory
+│
 ├── demo_target_app.py        # Pomodoro AUT + live metrics thread + JS agent host
 ├── selfhealing_agent.js      # in-browser agent (JS errors, image/selector healing)
 ├── collector_server.py       # HTTP sink for the browser agent (passive path)
@@ -240,7 +298,7 @@ demo/
 
 ---
 
-## 7. Storage
+## 8. Storage
 
 Each telemetry stream is its own file under `data/buckets/` (`ui_heals`,
 `infrastructure`, `alerts`, `browser_events`, `source_heals`), written through
@@ -249,7 +307,7 @@ and a rolling-window size cap (`config.BUCKET_LIMITS`).
 
 ---
 
-## 8. Tech stack
+## 9. Tech stack
 
 Python · Selenium WebDriver · JSON (lightweight fingerprint/metadata store) ·
 Streamlit + Plotly (dashboard) · filelock (atomic store). Rule-based only — no ML.

@@ -163,5 +163,517 @@
     "message": "Failed to load asset source location: http://127.0.0.1:8000/missing-asset.png",
     "appName": "Pomodoro 3D Focus Timer",
     "processed_timestamp": "2026-06-26T07:44:16.735583+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:10:40.124095+00:00"
+  },
+  {
+    "type": "js_error",
+    "message": "Unhandled script execution crash",
+    "file": "unknown_module",
+    "line": 0,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:10:40.170024+00:00"
+  },
+  {
+    "type": "resource_failure",
+    "message": "Failed to load asset source location: http://127.0.0.1:8000/missing-asset.png",
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:10:40.182474+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:11:39.812383+00:00"
+  },
+  {
+    "type": "js_error",
+    "message": "Unhandled script execution crash",
+    "file": "unknown_module",
+    "line": 0,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:11:39.852743+00:00"
+  },
+  {
+    "type": "resource_failure",
+    "message": "Failed to load asset source location: http://127.0.0.1:8000/missing-asset.png",
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:11:39.867602+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:12:16.074249+00:00"
+  },
+  {
+    "type": "js_error",
+    "message": "Unhandled script execution crash",
+    "file": "unknown_module",
+    "line": 0,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:12:16.124877+00:00"
+  },
+  {
+    "type": "resource_failure",
+    "message": "Failed to load asset source location: http://127.0.0.1:8000/missing-asset.png",
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:12:16.149684+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:13:41.215679+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:13:41.240361+00:00"
+  },
+  {
+    "type": "js_error",
+    "message": "Unhandled script execution crash",
+    "file": "unknown_module",
+    "line": 0,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:13:41.302404+00:00"
+  },
+  {
+    "type": "resource_failure",
+    "message": "Failed to load asset source location: http://127.0.0.1:8000/missing-asset.png",
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:13:41.316482+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:13:41.328988+00:00"
+  },
+  {
+    "type": "js_error",
+    "message": "Unhandled script execution crash",
+    "file": "unknown_module",
+    "line": 0,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:13:43.581531+00:00"
+  },
+  {
+    "type": "resource_failure",
+    "message": "Failed to load asset source location: http://127.0.0.1:8000/missing-asset.png",
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:13:43.594399+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:13:43.606725+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:13:45.477509+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:14:25.178584+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:14:25.270550+00:00"
+  },
+  {
+    "type": "js_error",
+    "message": "Unhandled script execution crash",
+    "file": "unknown_module",
+    "line": 0,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:14:25.366782+00:00"
+  },
+  {
+    "type": "resource_failure",
+    "message": "Failed to load asset source location: http://127.0.0.1:8000/missing-asset.png",
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:14:25.393223+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:14:25.410463+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:14:28.039930+00:00"
+  },
+  {
+    "type": "js_error",
+    "message": "Unhandled script execution crash",
+    "file": "unknown_module",
+    "line": 0,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:14:30.590521+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:14:30.608518+00:00"
+  },
+  {
+    "type": "resource_failure",
+    "message": "Failed to load asset source location: http://127.0.0.1:8000/missing-asset.png",
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:14:30.624716+00:00"
+  },
+  {
+    "type": "js_error",
+    "message": "Unhandled script execution crash",
+    "file": "unknown_module",
+    "line": 0,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:17:35.454331+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:17:35.471057+00:00"
+  },
+  {
+    "type": "resource_failure",
+    "message": "Failed to load asset source location: http://127.0.0.1:8000/missing-asset.png",
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:17:35.487649+00:00"
+  },
+  {
+    "type": "js_error",
+    "message": "Unhandled script execution crash",
+    "file": "unknown_module",
+    "line": 0,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:21:08.379529+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:21:08.393322+00:00"
+  },
+  {
+    "type": "resource_failure",
+    "message": "Failed to load asset source location: http://127.0.0.1:8000/missing-asset.png",
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:21:08.410891+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:29:44.452312+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:30:34.168822+00:00"
+  },
+  {
+    "type": "js_error",
+    "message": "Unhandled script execution crash",
+    "file": "unknown_module",
+    "line": 0,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:31:39.605547+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:31:39.623021+00:00"
+  },
+  {
+    "type": "resource_failure",
+    "message": "Failed to load asset source location: http://127.0.0.1:8000/missing-asset.png",
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-15T16:31:39.640912+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-16T03:09:54.916980+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-16T03:09:54.939125+00:00"
+  },
+  {
+    "type": "js_error",
+    "message": "Unhandled script execution crash",
+    "file": "unknown_module",
+    "line": 0,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-16T03:09:55.003048+00:00"
+  },
+  {
+    "type": "resource_failure",
+    "message": "Failed to load asset source location: http://127.0.0.1:8000/missing-asset.png",
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-16T03:09:55.017228+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-16T03:09:55.026880+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-16T03:09:58.548723+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-16T03:10:00.534816+00:00"
+  },
+  {
+    "type": "js_error",
+    "message": "Unhandled script execution crash",
+    "file": "unknown_module",
+    "line": 0,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-16T03:55:04.117335+00:00"
+  },
+  {
+    "type": "resource_failure",
+    "message": "Failed to load asset source location: http://127.0.0.1:8000/missing-asset.png",
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-16T03:55:04.134508+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-16T03:55:04.164493+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-16T04:59:56.277597+00:00"
+  },
+  {
+    "type": "js_error",
+    "message": "Unhandled script execution crash",
+    "file": "unknown_module",
+    "line": 0,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-16T04:59:56.319628+00:00"
+  },
+  {
+    "type": "resource_failure",
+    "message": "Failed to load asset source location: http://127.0.0.1:8000/missing-asset.png",
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-16T04:59:56.330931+00:00"
+  },
+  {
+    "type": "js_error",
+    "message": "Unhandled script execution crash",
+    "file": "unknown_module",
+    "line": 0,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-16T05:01:07.364981+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-16T05:01:07.378920+00:00"
+  },
+  {
+    "type": "resource_failure",
+    "message": "Failed to load asset source location: http://127.0.0.1:8000/missing-asset.png",
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-16T05:01:07.399991+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-16T05:01:07.567197+00:00"
+  },
+  {
+    "type": "js_error",
+    "message": "Unhandled script execution crash",
+    "file": "unknown_module",
+    "line": 0,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-16T05:01:07.628330+00:00"
+  },
+  {
+    "type": "resource_failure",
+    "message": "Failed to load asset source location: http://127.0.0.1:8000/missing-asset.png",
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-16T05:01:07.644637+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-16T05:01:07.656989+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-16T05:01:09.188731+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-16T05:01:10.781964+00:00"
+  },
+  {
+    "type": "js_error",
+    "message": "Unhandled script execution crash",
+    "file": "unknown_module",
+    "line": 0,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-16T05:02:45.613397+00:00"
+  },
+  {
+    "type": "resource_failure",
+    "message": "Failed to load asset source location: http://127.0.0.1:8000/missing-asset.png",
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-16T05:02:45.627116+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-16T05:02:45.651925+00:00"
+  },
+  {
+    "type": "selector_recovery",
+    "brokenSelector": "#old-start",
+    "recoveredSelector": "button[text='START']",
+    "confidence": 88.5,
+    "resolved": true,
+    "appName": "Pomodoro 3D Focus Timer",
+    "processed_timestamp": "2026-07-16T05:03:06.671263+00:00"
   }
 ]

@@ -50,3 +50,75 @@ def compute_neighbors(element, limit=3):
     except Exception:
         pass
     return neighbors
+
+
+# Tags treated as healable candidates when scraping the live DOM.
+CANDIDATE_TAGS = ["button", "div", "span", "a", "input"]
+
+# One-shot candidate harvest. The per-element approach (tag_name + get_attribute
+# x2 + a compute_xpath execute_script + a compute_neighbors find_elements, for
+# every element on the page) costs ~6 WebDriver round trips per candidate, so a
+# single heal on a modest page used to issue well over a thousand. This does the
+# whole walk inside the browser and returns every candidate's features in ONE
+# round trip. The xpath algorithm and the neighbor rule (first `limit` element
+# siblings in document order, non-empty text, truncated to 50 chars) are kept
+# byte-for-byte identical to compute_xpath/compute_neighbors above so golden
+# fingerprints and live candidates stay like-for-like -- R2 and R4 compare the
+# same shapes no matter which path produced them.
+_CANDIDATES_JS = """
+var tags = arguments[0], limit = arguments[1], nlimit = arguments[2];
+var allowed = {};
+for (var t = 0; t < tags.length; t++) { allowed[tags[t]] = true; }
+
+function getXPath(el) {
+  var parts = [];
+  while (el && el.nodeType === Node.ELEMENT_NODE) {
+    var siblings = 0, sibling = el.previousSibling;
+    while (sibling) {
+      if (sibling.nodeType === Node.ELEMENT_NODE && sibling.nodeName === el.nodeName) { siblings++; }
+      sibling = sibling.previousSibling;
+    }
+    parts.unshift(el.nodeName.toLowerCase() + '[' + (siblings + 1) + ']');
+    el = el.parentNode;
+  }
+  return parts.length ? '/' + parts.join('/') : '';
+}
+
+function textOf(el) { return ((el.innerText || el.textContent) || '').trim(); }
+
+var out = [], all = document.querySelectorAll('*');
+for (var i = 0; i < all.length && out.length < limit; i++) {
+  var el = all[i], tag = el.tagName.toLowerCase();
+  if (!allowed[tag]) { continue; }
+
+  var sibs = [], parent = el.parentNode;
+  if (parent && parent.children) {
+    for (var j = 0; j < parent.children.length; j++) {
+      if (parent.children[j] !== el) { sibs.push(parent.children[j]); }
+    }
+  }
+  var neighbors = [];
+  for (var k = 0; k < sibs.length && k < nlimit; k++) {
+    var txt = textOf(sibs[k]);
+    if (txt) { neighbors.push({ tag_name: sibs[k].tagName.toLowerCase(), text: txt.slice(0, 50) }); }
+  }
+
+  out.push({
+    tag_name: tag,
+    inner_text: textOf(el),
+    css_class: (el.getAttribute('class') || '').trim(),
+    xpath: getXPath(el),
+    neighbors: neighbors
+  });
+}
+return out;
+"""
+
+
+def collect_candidates(driver, limit=200, neighbor_limit=3):
+    """Every healable candidate on the page with its R1-R4 features, in one
+    round trip. Returns [] if the DOM is unreadable (caller decides how to
+    escalate)."""
+    return driver.execute_script(
+        _CANDIDATES_JS, CANDIDATE_TAGS, int(limit), int(neighbor_limit)
+    ) or []
