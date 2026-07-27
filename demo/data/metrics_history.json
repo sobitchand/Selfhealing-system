@@ -1,900 +1,216 @@
 [
   {
-    "timestamp": "2026-07-16T05:06:42.456307+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 92.46,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:06:44.464027+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 94.46,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:06:46.470375+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 51.47,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:06:48.476132+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 53.48,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:06:50.481781+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 55.48,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:06:52.489259+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 57.49,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:06:54.494821+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 59.49,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:06:56.504036+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 61.5,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:06:58.515728+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 63.52,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:07:00.526893+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 65.53,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:07:02.540952+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 67.54,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:07:04.549657+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 69.55,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:07:06.562146+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 71.56,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:07:08.571864+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 73.57,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:07:10.578886+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 75.58,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:07:12.587907+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 77.59,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:07:14.595201+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 79.6,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:07:16.601365+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 81.6,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:07:18.609519+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 83.61,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:07:20.615125+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 85.62,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:07:22.621153+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 87.62,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:07:24.630183+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 89.63,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:07:26.636225+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 91.64,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:07:28.644890+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 93.64,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:07:30.655604+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 50.66,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:07:32.666929+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 52.67,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:07:34.680473+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 54.68,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:07:36.695108+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 56.7,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:07:38.704529+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 58.7,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:07:40.712681+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 60.71,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:07:42.721758+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 62.72,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:07:44.727344+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 64.73,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:07:46.733916+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 66.73,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-16T05:07:48.742046+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 68.74,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:38:06.852650+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 86.85,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:38:08.866038+00:00",
+    "timestamp": "2026-07-27T11:17:13.338678+00:00",
     "traffic_rate": 1,
     "active_requests": 0,
-    "disk_usage_percent": 88.87,
+    "disk_usage_percent": 93.34,
     "service_health": "Up",
     "http_status": 200,
     "error_rate_percent": 0.0
   },
   {
-    "timestamp": "2026-07-27T09:38:10.872553+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 90.87,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:38:12.879065+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 92.88,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:38:14.887429+00:00",
+    "timestamp": "2026-07-27T11:17:15.343260+00:00",
     "traffic_rate": 2,
     "active_requests": 0,
-    "disk_usage_percent": 94.89,
+    "disk_usage_percent": 50.34,
     "service_health": "Up",
     "http_status": 200,
     "error_rate_percent": 0.0
   },
   {
-    "timestamp": "2026-07-27T09:38:16.895596+00:00",
+    "timestamp": "2026-07-27T11:17:17.346156+00:00",
     "traffic_rate": 0,
     "active_requests": 0,
-    "disk_usage_percent": 51.9,
+    "disk_usage_percent": 52.35,
     "service_health": "Up",
     "http_status": 200,
     "error_rate_percent": 0.0
   },
   {
-    "timestamp": "2026-07-27T09:38:18.903485+00:00",
-    "traffic_rate": 2,
-    "active_requests": 0,
-    "disk_usage_percent": 53.9,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:38:20.909955+00:00",
+    "timestamp": "2026-07-27T11:17:19.348778+00:00",
     "traffic_rate": 0,
     "active_requests": 0,
-    "disk_usage_percent": 55.91,
+    "disk_usage_percent": 54.35,
     "service_health": "Up",
     "http_status": 200,
     "error_rate_percent": 0.0
   },
   {
-    "timestamp": "2026-07-27T09:38:22.918506+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 57.92,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:38:24.926889+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 59.93,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:38:26.934330+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 61.93,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:38:28.955830+00:00",
-    "traffic_rate": 2,
-    "active_requests": 0,
-    "disk_usage_percent": 63.96,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:38:30.962948+00:00",
-    "traffic_rate": 4,
-    "active_requests": 0,
-    "disk_usage_percent": 65.96,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:38:32.970823+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 67.97,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:39:45.508652+00:00",
-    "traffic_rate": 2,
-    "active_requests": 0,
-    "disk_usage_percent": 50.51,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:39:47.514309+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 52.51,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:39:49.520516+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 54.52,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:39:51.526485+00:00",
+    "timestamp": "2026-07-27T11:17:21.351602+00:00",
     "traffic_rate": 1,
     "active_requests": 0,
-    "disk_usage_percent": 56.53,
+    "disk_usage_percent": 56.35,
     "service_health": "Up",
     "http_status": 200,
     "error_rate_percent": 0.0
   },
   {
-    "timestamp": "2026-07-27T09:39:53.532232+00:00",
+    "timestamp": "2026-07-27T11:17:23.355022+00:00",
     "traffic_rate": 0,
     "active_requests": 0,
-    "disk_usage_percent": 58.53,
+    "disk_usage_percent": 58.35,
     "service_health": "Up",
     "http_status": 200,
     "error_rate_percent": 0.0
   },
   {
-    "timestamp": "2026-07-27T09:39:55.539081+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 60.54,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:39:57.545819+00:00",
+    "timestamp": "2026-07-27T11:17:25.358029+00:00",
     "traffic_rate": 1,
     "active_requests": 0,
-    "disk_usage_percent": 62.55,
+    "disk_usage_percent": 60.36,
     "service_health": "Up",
     "http_status": 200,
     "error_rate_percent": 0.0
   },
   {
-    "timestamp": "2026-07-27T09:39:59.551559+00:00",
+    "timestamp": "2026-07-27T11:17:27.361923+00:00",
     "traffic_rate": 0,
     "active_requests": 0,
-    "disk_usage_percent": 64.55,
+    "disk_usage_percent": 62.36,
     "service_health": "Up",
     "http_status": 200,
     "error_rate_percent": 0.0
   },
   {
-    "timestamp": "2026-07-27T09:40:01.558762+00:00",
+    "timestamp": "2026-07-27T11:17:29.365241+00:00",
+    "traffic_rate": 0,
+    "active_requests": 0,
+    "disk_usage_percent": 64.37,
+    "service_health": "Up",
+    "http_status": 200,
+    "error_rate_percent": 0.0
+  },
+  {
+    "timestamp": "2026-07-27T11:17:31.368485+00:00",
     "traffic_rate": 1,
     "active_requests": 0,
-    "disk_usage_percent": 66.56,
+    "disk_usage_percent": 66.37,
     "service_health": "Up",
     "http_status": 200,
     "error_rate_percent": 0.0
   },
   {
-    "timestamp": "2026-07-27T09:40:03.565522+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 68.57,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:40:05.571003+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 70.57,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:40:07.579365+00:00",
-    "traffic_rate": 4,
-    "active_requests": 0,
-    "disk_usage_percent": 72.58,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:40:09.585897+00:00",
-    "traffic_rate": 2,
-    "active_requests": 0,
-    "disk_usage_percent": 74.59,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:40:21.507825+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 86.51,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:40:23.515073+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 88.52,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:40:25.521497+00:00",
-    "traffic_rate": 5,
-    "active_requests": 0,
-    "disk_usage_percent": 90.52,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:40:27.527401+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 92.53,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:40:29.532287+00:00",
+    "timestamp": "2026-07-27T11:17:33.371683+00:00",
     "traffic_rate": 1,
     "active_requests": 0,
-    "disk_usage_percent": 94.53,
+    "disk_usage_percent": 68.37,
     "service_health": "Up",
     "http_status": 200,
     "error_rate_percent": 0.0
   },
   {
-    "timestamp": "2026-07-27T09:40:31.538008+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 51.54,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:40:33.544380+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 53.54,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:40:35.549857+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 55.55,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:40:37.555732+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 57.56,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:40:39.561855+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 59.56,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:40:41.568746+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 61.57,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:40:43.575218+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 63.58,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:40:45.582714+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 65.58,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:40:47.590388+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 67.59,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:42:50.206386+00:00",
-    "traffic_rate": 2,
-    "active_requests": 0,
-    "disk_usage_percent": 55.21,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:42:52.212045+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 57.21,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:42:54.218856+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 59.22,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:42:56.225024+00:00",
-    "traffic_rate": 1,
-    "active_requests": 0,
-    "disk_usage_percent": 61.22,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:42:58.232311+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 63.23,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:43:00.238088+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 65.24,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:43:02.244140+00:00",
-    "traffic_rate": 1,
-    "active_requests": 0,
-    "disk_usage_percent": 67.24,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:43:04.250887+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 69.25,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:43:06.258161+00:00",
-    "traffic_rate": 1,
-    "active_requests": 0,
-    "disk_usage_percent": 71.26,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:43:08.263821+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 73.26,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:43:10.270571+00:00",
-    "traffic_rate": 2,
-    "active_requests": 0,
-    "disk_usage_percent": 75.27,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:43:12.277011+00:00",
-    "traffic_rate": 2,
-    "active_requests": 0,
-    "disk_usage_percent": 77.28,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T09:43:14.285688+00:00",
-    "traffic_rate": 2,
-    "active_requests": 0,
-    "disk_usage_percent": 79.29,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T10:47:43.609159+00:00",
+    "timestamp": "2026-07-27T11:17:35.375522+00:00",
     "traffic_rate": 3,
     "active_requests": 0,
-    "disk_usage_percent": 78.61,
+    "disk_usage_percent": 70.38,
     "service_health": "Up",
     "http_status": 200,
     "error_rate_percent": 0.0
   },
   {
-    "timestamp": "2026-07-27T10:47:45.614122+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 80.61,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T10:47:47.618970+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 82.62,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T10:47:49.623750+00:00",
-    "traffic_rate": 1,
-    "active_requests": 0,
-    "disk_usage_percent": 84.62,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T10:47:51.628296+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 86.63,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T10:47:53.632753+00:00",
-    "traffic_rate": 1,
-    "active_requests": 0,
-    "disk_usage_percent": 88.63,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T10:47:55.638019+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 90.64,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T10:47:57.646506+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 92.65,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T10:47:59.652312+00:00",
-    "traffic_rate": 1,
-    "active_requests": 0,
-    "disk_usage_percent": 94.65,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T10:48:01.659512+00:00",
-    "traffic_rate": 0,
-    "active_requests": 0,
-    "disk_usage_percent": 51.66,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T10:48:03.666185+00:00",
-    "traffic_rate": 4,
-    "active_requests": 0,
-    "disk_usage_percent": 53.67,
-    "service_health": "Up",
-    "http_status": 200,
-    "error_rate_percent": 0.0
-  },
-  {
-    "timestamp": "2026-07-27T10:48:05.672964+00:00",
+    "timestamp": "2026-07-27T11:17:37.378468+00:00",
     "traffic_rate": 2,
     "active_requests": 0,
-    "disk_usage_percent": 55.67,
+    "disk_usage_percent": 72.38,
+    "service_health": "Up",
+    "http_status": 200,
+    "error_rate_percent": 0.0
+  },
+  {
+    "timestamp": "2026-07-27T11:17:39.382496+00:00",
+    "traffic_rate": 0,
+    "active_requests": 0,
+    "disk_usage_percent": 74.38,
+    "service_health": "Up",
+    "http_status": 200,
+    "error_rate_percent": 0.0
+  },
+  {
+    "timestamp": "2026-07-27T11:17:41.386159+00:00",
+    "traffic_rate": 0,
+    "active_requests": 0,
+    "disk_usage_percent": 76.39,
+    "service_health": "Up",
+    "http_status": 200,
+    "error_rate_percent": 0.0
+  },
+  {
+    "timestamp": "2026-07-27T11:17:43.390046+00:00",
+    "traffic_rate": 0,
+    "active_requests": 0,
+    "disk_usage_percent": 78.39,
+    "service_health": "Up",
+    "http_status": 200,
+    "error_rate_percent": 0.0
+  },
+  {
+    "timestamp": "2026-07-27T11:17:45.393381+00:00",
+    "traffic_rate": 0,
+    "active_requests": 0,
+    "disk_usage_percent": 80.39,
+    "service_health": "Up",
+    "http_status": 200,
+    "error_rate_percent": 0.0
+  },
+  {
+    "timestamp": "2026-07-27T11:17:47.397608+00:00",
+    "traffic_rate": 0,
+    "active_requests": 0,
+    "disk_usage_percent": 82.4,
+    "service_health": "Up",
+    "http_status": 200,
+    "error_rate_percent": 0.0
+  },
+  {
+    "timestamp": "2026-07-27T11:17:49.400866+00:00",
+    "traffic_rate": 0,
+    "active_requests": 0,
+    "disk_usage_percent": 84.4,
+    "service_health": "Up",
+    "http_status": 200,
+    "error_rate_percent": 0.0
+  },
+  {
+    "timestamp": "2026-07-27T11:17:51.404799+00:00",
+    "traffic_rate": 0,
+    "active_requests": 0,
+    "disk_usage_percent": 86.4,
+    "service_health": "Up",
+    "http_status": 200,
+    "error_rate_percent": 0.0
+  },
+  {
+    "timestamp": "2026-07-27T11:17:53.409062+00:00",
+    "traffic_rate": 0,
+    "active_requests": 0,
+    "disk_usage_percent": 88.41,
+    "service_health": "Up",
+    "http_status": 200,
+    "error_rate_percent": 0.0
+  },
+  {
+    "timestamp": "2026-07-27T11:17:55.412895+00:00",
+    "traffic_rate": 0,
+    "active_requests": 0,
+    "disk_usage_percent": 90.41,
+    "service_health": "Up",
+    "http_status": 200,
+    "error_rate_percent": 0.0
+  },
+  {
+    "timestamp": "2026-07-27T11:17:57.416410+00:00",
+    "traffic_rate": 0,
+    "active_requests": 0,
+    "disk_usage_percent": 92.42,
+    "service_health": "Up",
+    "http_status": 200,
+    "error_rate_percent": 0.0
+  },
+  {
+    "timestamp": "2026-07-27T11:17:59.419977+00:00",
+    "traffic_rate": 0,
+    "active_requests": 0,
+    "disk_usage_percent": 94.42,
     "service_health": "Up",
     "http_status": 200,
     "error_rate_percent": 0.0
