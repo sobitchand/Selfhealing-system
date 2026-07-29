@@ -24,9 +24,17 @@ class CollectorBackendHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         if self.path == "/selfhealing/events":
-            content_length = int(self.headers["Content-Length"])
-            post_data = self.rfile.read(content_length)
-            event_payload = json.loads(post_data.decode("utf-8"))
+            try:
+                content_length = int(self.headers.get("Content-Length", 0))
+                post_data = self.rfile.read(content_length)
+                event_payload = json.loads(post_data.decode("utf-8"))
+            except (json.JSONDecodeError, UnicodeDecodeError, ValueError) as e:
+                print(f"⚠️ Malformed event payload rejected: {e}")
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(bytes(json.dumps({"status": "error", "detail": str(e)}), "utf-8"))
+                return
 
             print(f"📥 Received event from Browser Agent: {event_payload.get('type')}")
             handle_passive_event(event_payload)

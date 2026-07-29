@@ -20,8 +20,12 @@ import plotly.express as px
 import streamlit as st
 
 import config
+import config_manager
 import store
 import theme
+
+# Apply configuration overrides at startup
+config_manager.apply_overrides()
 
 st.set_page_config(page_title="Self-Healing Control Panel", layout="wide")
 st.markdown(theme.stylesheet(), unsafe_allow_html=True)
@@ -110,8 +114,8 @@ with st.sidebar:
             unsafe_allow_html=True,
         )
 
-tab_ui, tab_source, tab_infra, tab_alerts = st.tabs(
-    ["Locator healing", "Source write-back", "Infrastructure", "Alerts"]
+tab_ui, tab_source, tab_infra, tab_alerts, tab_analytics, tab_config = st.tabs(
+    ["Locator healing", "Source write-back", "Infrastructure", "Alerts", "Analytics", "Configuration"]
 )
 
 # --------------------------------------------------------------------------
@@ -330,6 +334,299 @@ with tab_alerts:
             ) + theme.table_note(min(ROW_LIMIT, len(records)), len(records), "alerts"),
             unsafe_allow_html=True,
         )
+
+# --------------------------------------------------------------------------
+# Analytics (Advanced Features)
+# --------------------------------------------------------------------------
+with tab_analytics:
+    try:
+        import analytics
+        analytics_data = analytics.run_analytics()
+    except Exception as e:
+        analytics_data = None
+        st.markdown(
+            theme.empty(f"Analytics unavailable: {e}"),
+            unsafe_allow_html=True,
+        )
+
+    if analytics_data:
+        st.markdown(
+            theme.section(
+                "Advanced Analytics",
+                "Locator stability scoring, flaky test detection, and cost analysis. "
+                "Features that Healenium and Testim do not provide.",
+            ),
+            unsafe_allow_html=True,
+        )
+
+        # Cost analysis summary
+        cost = analytics_data["cost_analysis"]["summary"]
+        st.markdown(
+            theme.stat_row([
+                ("Total heals", cost["total_heals"]),
+                ("Time saved", f"{cost['time_saved_hours']:.1f}h"),
+                ("Cost saved", f"${cost['cost_saved_usd']:.0f}"),
+                ("ROI", f"{cost['roi_percentage']:.0f}%"),
+            ]),
+            unsafe_allow_html=True,
+        )
+
+        # Locator stability
+        st.markdown(
+            theme.section(
+                "Locator Stability",
+                "Predicts which locators are likely to break. Score 0-100, "
+                "higher is more stable. Based on ID specificity, semantic meaning, "
+                "uniqueness, DOM depth, and text content.",
+            ),
+            unsafe_allow_html=True,
+        )
+
+        stability = analytics_data["locator_stability"]
+        if stability:
+            rows = []
+            for s in sorted(stability, key=lambda x: x["stability_score"])[:10]:
+                rows.append({
+                    "locator": esc(s["locator"]),
+                    "score": f"{s['stability_score']}/100",
+                    "level": theme.pill(s["stability_level"]),
+                    "risk": theme.pill(s["breakage_risk"]),
+                    "recommendation": esc(s["recommendation"][:80]),
+                })
+            st.markdown(
+                theme.table(
+                    rows,
+                    [("locator", "Locator"), ("score", "Score"), ("level", "Level"),
+                     ("risk", "Risk"), ("recommendation", "Recommendation")],
+                    aligns={"locator": "mono", "score": "num"},
+                ),
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                theme.empty("No fingerprints to analyze. Run Learning Mode first."),
+                unsafe_allow_html=True,
+            )
+
+        # Flaky locator detection
+        st.markdown(
+            theme.section(
+                "Flaky Locator Detection",
+                "Locators that have healed 3+ times. Frequent healing indicates "
+                "the locator is unstable and should be refactored.",
+            ),
+            unsafe_allow_html=True,
+        )
+
+        flaky = analytics_data["flaky_locators"]
+        if flaky:
+            rows = []
+            for f in flaky[:10]:
+                rows.append({
+                    "locator": esc(f["locator"]),
+                    "heals": str(f["heal_count"]),
+                    "confidence": pct(f["avg_confidence"]),
+                    "severity": theme.pill(f["severity"]),
+                    "recommendation": esc(f["recommendation"][:80]),
+                })
+            st.markdown(
+                theme.table(
+                    rows,
+                    [("locator", "Locator"), ("heals", "Heal Count"),
+                     ("confidence", "Avg Confidence"), ("severity", "Severity"),
+                     ("recommendation", "Recommendation")],
+                    aligns={"locator": "mono", "heals": "num", "confidence": "num"},
+                ),
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                theme.empty("No flaky locators detected (threshold: 3 heals)."),
+                unsafe_allow_html=True,
+            )
+
+        # Cost analysis details
+        st.markdown(
+            theme.section(
+                "Cost Analysis",
+                "Time and cost savings compared to manual fixing. "
+                "Assumes 10 minutes per manual locator fix at $50/hour.",
+            ),
+            unsafe_allow_html=True,
+        )
+
+        efficiency = analytics_data["cost_analysis"]["efficiency"]
+        comparison = analytics_data["cost_analysis"]["comparison"]
+
+        st.markdown(
+            theme.stat_row([
+                ("Avg heal time", f"{efficiency['avg_heal_time_ms']}ms"),
+                ("Heals/hour", f"{efficiency['heals_per_hour']:.0f}"),
+                ("Manual fixes/hour", str(efficiency["manual_fixes_per_hour"])),
+            ]),
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            theme.table(
+                [
+                    {"method": "Self-Healing", "time_per_fix": f"{comparison['self_healing']['time_per_fix_ms']}ms",
+                     "requires_human": "No", "scales": "Yes"},
+                    {"method": "Manual Fix", "time_per_fix": f"{comparison['manual']['time_per_fix_minutes']}min",
+                     "requires_human": "Yes", "scales": "No"},
+                ],
+                [("method", "Method"), ("time_per_fix", "Time per Fix"),
+                 ("requires_human", "Requires Human"), ("scales", "Scales Linearly")],
+            ),
+            unsafe_allow_html=True,
+        )
+
+# --------------------------------------------------------------------------
+# Configuration
+# --------------------------------------------------------------------------
+with tab_config:
+    st.markdown(
+        theme.section(
+            "System Configuration",
+            "Configure the self-healing system without editing code. Changes are saved to "
+            "<code>data/config_override.json</code> and applied to all future healing operations.",
+        ),
+        unsafe_allow_html=True,
+    )
+
+    current_config = config_manager.get_config()
+
+    # Source Healing Toggle
+    st.markdown(
+        theme.section(
+            "Source Code Healing",
+            "When enabled, healed locators are written back to test source files, making fixes permanent.",
+        ),
+        unsafe_allow_html=True,
+    )
+
+    source_heal_enabled = st.toggle(
+        "Enable source code healing",
+        value=current_config["source_heal_enabled"],
+        help="When enabled, the system will patch test files with healed locators",
+    )
+
+    if source_heal_enabled != current_config["source_heal_enabled"]:
+        config_manager.set_source_heal_enabled(source_heal_enabled)
+        st.success(f"Source healing {'enabled' if source_heal_enabled else 'disabled'}")
+
+    # Source Heal Targets
+    st.markdown(
+        theme.section(
+            "Source Heal Target Files",
+            "Test files that will be patched when locators are healed. Add your test files here.",
+        ),
+        unsafe_allow_html=True,
+    )
+
+    # Current targets
+    current_targets = current_config["source_heal_targets"]
+    if current_targets:
+        st.markdown("**Current targets:**")
+        for target in current_targets:
+            col1, col2 = st.columns([4, 1])
+            with col1:
+                st.code(target, language="text")
+            with col2:
+                if st.button("Remove", key=f"remove_{target}"):
+                    config_manager.remove_source_heal_target(target)
+                    st.rerun()
+    else:
+        st.info("No target files configured. Add files below.")
+
+    # Add new target
+    st.markdown("**Add target file:**")
+    
+    # File scanner
+    if st.button("Scan for test files"):
+        st.session_state["scanned_files"] = config_manager.scan_test_files()
+
+    if "scanned_files" in st.session_state:
+        scanned = st.session_state["scanned_files"]
+        if scanned:
+            selected_file = st.selectbox(
+                "Select a test file",
+                options=[""] + scanned,
+                format_func=lambda x: "Choose a file..." if x == "" else x,
+            )
+            if selected_file and st.button("Add selected file"):
+                full_path = os.path.join(config.BASE_DIR, selected_file)
+                if config_manager.add_source_heal_target(full_path):
+                    st.success(f"Added: {selected_file}")
+                    st.rerun()
+                else:
+                    st.warning("File already in target list")
+        else:
+            st.warning("No test files found in project directory")
+
+    # Manual entry
+    manual_path = st.text_input(
+        "Or enter file path manually",
+        placeholder="tests/test_login.py",
+    )
+    if manual_path and st.button("Add manual path"):
+        full_path = os.path.join(config.BASE_DIR, manual_path)
+        if config_manager.add_source_heal_target(full_path):
+            st.success(f"Added: {manual_path}")
+            st.rerun()
+        else:
+            st.warning("File already in target list")
+
+    # Confidence Thresholds
+    st.markdown(
+        theme.section(
+            "Confidence Thresholds",
+            "Control when the system auto-heals, cautions, or halts. Higher thresholds = more conservative.",
+        ),
+        unsafe_allow_html=True,
+    )
+
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        high_threshold = st.slider(
+            "Auto-heal threshold (%)",
+            min_value=50,
+            max_value=95,
+            value=int(current_config["confidence_threshold_high"]),
+            help="Heals above this confidence are applied automatically",
+        )
+
+    with col2:
+        low_threshold = st.slider(
+            "Safety gate threshold (%)",
+            min_value=5,
+            max_value=50,
+            value=int(current_config["confidence_threshold_low"]),
+            help="Heals below this confidence are rejected (manual intervention required)",
+        )
+
+    if (high_threshold != current_config["confidence_threshold_high"] or
+        low_threshold != current_config["confidence_threshold_low"]):
+        config_manager.set_confidence_thresholds(high_threshold, low_threshold)
+        st.success(f"Thresholds updated: auto-heal ≥{high_threshold}%, safety gate <{low_threshold}%")
+
+    # Threshold explanation
+    st.markdown(
+        f"""
+        **Current behavior:**
+        - **≥ {high_threshold}%**: Automatic heal (applied immediately)
+        - **{low_threshold}%-{high_threshold}%**: Cautious heal (applied but flagged for review)
+        - **< {low_threshold}%**: Halt (manual intervention required)
+        """
+    )
+
+    # Reset to defaults
+    st.markdown("---")
+    if st.button("Reset to defaults", type="secondary"):
+        config_manager.reset_to_defaults()
+        st.success("Configuration reset to defaults")
+        st.rerun()
 
 # Auto-refresh last, so the whole page paints before we pause.
 if os.environ.get("DASH_NO_REFRESH") != "1":

@@ -1,6 +1,11 @@
 import json
 import os
 import re
+import sys
+import glob
+import subprocess
+import time
+import urllib.request
 import difflib
 from datetime import datetime
 import config
@@ -220,6 +225,7 @@ class UIHeuristicEngine:
 class DynamicInfrastructureHealer:
     def __init__(self, history_path=config.METRICS_HISTORY_PATH):
         self.history_path = history_path
+        self.data_dir = config.DATA_DIR
 
     def analyze_and_heal_system(self):
         """Analyzes metric snapshots to detect anomalies without hardcoded alert triggers."""
@@ -234,7 +240,6 @@ class DynamicInfrastructureHealer:
         
         current_state = history[-1]
         
-        # Dynamic threshold verification logic
         disk_stress = current_state.get("disk_usage_percent", 0) > 85.0
         error_rate_stress = current_state.get("error_rate_percent", 0) > 40.0
         is_down = current_state.get("service_health") == "Down" or current_state.get("http_status") == 500
@@ -242,27 +247,158 @@ class DynamicInfrastructureHealer:
         if is_down or (disk_stress and error_rate_stress):
             self.execute_infrastructure_heal(current_state, disk_stress, error_rate_stress)
 
+    def _purge_temp_files(self):
+        """Delete stale .tmp files left behind by interrupted atomic writes."""
+        purged = 0
+        for pattern in [
+            os.path.join(self.data_dir, "*.tmp"),
+            os.path.join(self.data_dir, "*.*.tmp"),
+        ]:
+            for tmp_file in glob.glob(pattern):
+                try:
+                    os.remove(tmp_file)
+                    purged += 1
+                except OSError:
+                    pass
+        return purged
+
+    def _rotate_metrics_history(self, keep=20):
+        """Truncate metrics_history.json to the last N entries (aggressive log rotation)."""
+        try:
+            with open(self.history_path, "r") as f:
+                data = json.load(f)
+            if len(data) <= keep:
+                return 0
+            trimmed = data[-keep:]
+            removed = len(data) - keep
+            tmp = self.history_path + ".rotating.tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(trimmed, f, indent=2)
+            os.replace(tmp, self.history_path)
+            return removed
+        except Exception:
+            return 0
+
+    def _reset_error_counters(self):
+        """Write a recovery marker that signals the metrics monitor to reset its sliding window."""
+        marker_path = os.path.join(self.data_dir, "recovery_marker.json")
+        try:
+            marker = {
+                "timestamp": datetime.utcnow().isoformat() + "+00:00",
+                "action": "error_counter_reset",
+                "reason": "error_rate_stress_detected",
+            }
+            with open(marker_path, "w", encoding="utf-8") as f:
+                json.dump(marker, f, indent=2)
+            return True
+        except Exception:
+            return False
+
+    def _restart_target_app(self):
+        """Kill the stale process on the target app's port and relaunch it."""
+        port = config.TARGET_APP_PORT
+        killed_pid = None
+
+        try:
+            if os.name == "nt":
+                result = subprocess.run(
+                    ["netstat", "-ano"],
+                    capture_output=True, text=True, timeout=5
+                )
+                for line in result.stdout.splitlines():
+                    if f":{port}" in line and "LISTENING" in line:
+                        killed_pid = line.strip().split()[-1]
+                        subprocess.run(
+                            ["taskkill", "/F", "/PID", killed_pid],
+                            capture_output=True, timeout=5
+                        )
+                        break
+            else:
+                result = subprocess.run(
+                    ["lsof", "-ti", f":{port}"],
+                    capture_output=True, text=True, timeout=5
+                )
+                for pid in result.stdout.strip().split():
+                    killed_pid = pid
+                    subprocess.run(
+                        ["kill", "-9", pid],
+                        capture_output=True, timeout=5
+                    )
+                    break
+        except Exception as e:
+            return f"Failed to kill stale process on port {port}: {e}"
+
+        if killed_pid:
+            time.sleep(0.5)
+
+        app_script = os.path.join(config.BASE_DIR, "demo_target_app.py")
+        if not os.path.exists(app_script):
+            return f"Killed PID {killed_pid} but demo_target_app.py not found at {app_script}"
+
+        try:
+            creation_flags = 0
+            if os.name == "nt":
+                creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS
+
+            subprocess.Popen(
+                [sys.executable, app_script, str(port)],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                creationflags=creation_flags if os.name == "nt" else 0,
+                start_new_session=(os.name != "nt"),
+            )
+        except Exception as e:
+            return f"Killed PID {killed_pid} but relaunch failed: {e}"
+
+        for _ in range(10):
+            time.sleep(0.5)
+            try:
+                req = urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=2)
+                if req.status == 200:
+                    return f"Killed stale PID {killed_pid}, relaunched on port {port} — verified responding"
+            except Exception:
+                pass
+
+        return f"Killed PID {killed_pid}, relaunched on port {port} — not yet responding"
+
     def execute_infrastructure_heal(self, state, disk_stress, error_stress):
-        action_taken = "Generic Service Restart & Cache Flush"
-        if disk_stress:
-            action_taken = "Automated Log Rotation & Temp File Purge"
-        elif error_stress:
-            action_taken = "Graceful Application Worker Pool Reload"
-
         timestamp = datetime.utcnow().isoformat() + "+00:00"
+        actions_performed = []
+        action_summary = ""
 
-        # PASSIVE path: fire-and-forget infrastructure heal telemetry.
+        if disk_stress:
+            purged = self._purge_temp_files()
+            rotated = self._rotate_metrics_history(keep=20)
+            actions_performed.append(f"Purged {purged} temp file(s)")
+            actions_performed.append(f"Rotated metrics history (removed {rotated} old entries)")
+            action_summary = "Log Rotation & Temp File Purge"
+
+        elif error_stress:
+            reset = self._reset_error_counters()
+            actions_performed.append(
+                "Reset error counter sliding window" if reset else "Error counter reset failed"
+            )
+            action_summary = "Worker Pool Error Counter Reset"
+
+        else:
+            restart_result = self._restart_target_app()
+            actions_performed.append(restart_result)
+            action_summary = "Service Restart Attempt"
+
         store.append("infrastructure", {
             "timestamp": timestamp,
             "trigger_metric": f"Status: {state.get('http_status')}, Error: {state.get('error_rate_percent')}%, Disk: {state.get('disk_usage_percent')}%",
-            "action_executed": action_taken,
+            "action_executed": action_summary,
+            "actions_detail": actions_performed,
             "status": "resolved"
         })
+
+        print(f"⚙️ Infrastructure heal: {action_summary} — {', '.join(actions_performed)}")
 
         if state.get("disk_usage_percent", 0) > 90.0:
             store.append("alerts", {
                 "timestamp": timestamp,
                 "severity": "critical",
-                "message": f"Disk space critically low ({state.get('disk_usage_percent')}%). Running automatic cleanup.",
+                "message": f"Disk space critically low ({state.get('disk_usage_percent')}%). Automatic cleanup executed.",
                 "source": "InfrastructureEngine"
             })

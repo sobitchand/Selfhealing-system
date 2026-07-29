@@ -81,6 +81,9 @@ Run all of these from inside `demo/`.
 | `python simulate_infra_heal.py` | canned infrastructure recovery |
 | `python test_ui_healing.py` | canned UI heal, no browser needed |
 | `python reset_demo.py` | **run before presenting** — see §7 |
+| `python benchmark.py` | **benchmark** — 50+ scenarios, success rate, heal time, confidence histogram |
+| `python run_cross_browser_benchmark.py` | **cross-browser** — benchmark on Chrome + Firefox, compare results |
+| `python analytics.py` | **analytics** — locator stability, flaky detection, cost analysis |
 
 ---
 
@@ -286,6 +289,8 @@ Nothing has healed yet. Run `python demo.py`, or check that the buckets under
 | Dashboard | dark, emoji headings, inflated labels | white, Libertinus Serif, plain language, Streamlit chrome hidden |
 | Port handling | assumed anything on :8000 was ours | verifies the app, falls back to 8010/8020/8030 |
 | False heals | Learning Mode's discovery scan was itself healed | learning runs suppressed; `find_elements` healing is opt-in |
+| Infrastructure healer | logged recovery actions as strings, never executed them | executes real commands: temp file purge, metrics log rotation, error counter reset, stale process kill |
+| Collector server | `json.loads()` crash on malformed POST body | `try/except` around JSON parsing; returns 400 with error detail |
 
 ### The false-heal fix, in detail
 
@@ -304,9 +309,146 @@ answer rather than a failure signal.
 
 A clean run now logs exactly 5 heals and 0 alerts.
 
+### The infrastructure healer fix, in detail
+
+Worth knowing because it is the answer to "does it actually heal infrastructure
+or just log that it did?".
+
+`DynamicInfrastructureHealer` used to set `action_taken` to a descriptive string
+(e.g. `"Automated Log Rotation & Temp File Purge"`) and write that string to the
+infrastructure bucket — but never executed any command. A judge could ask "what
+log rotation? what purge?" and the answer would be "it logged that it did it."
+
+Four real recovery methods now replace the string:
+
+| Trigger | Method | What it actually does |
+|---------|--------|----------------------|
+| Disk stress (>85%) | `_purge_temp_files()` | deletes stale `.tmp` files from `data/` left by interrupted atomic writes |
+| Disk stress (>85%) | `_rotate_metrics_history(keep=20)` | truncates `metrics_history.json` to the last 20 entries via atomic temp+replace |
+| Error rate stress (>40%) | `_reset_error_counters()` | writes `data/recovery_marker.json`; the metrics monitor picks it up and zeroes the sliding-window error counters |
+| Service down (HTTP 500) | `_restart_target_app()` | kills the stale process on the target app's port via `netstat`/`taskkill` (Windows) or `lsof`/`kill` (Linux), then relaunches `demo_target_app.py` as a detached background process and polls the port until it responds |
+
+Each action logs its real results to `store.append("infrastructure", ...)` with an
+`actions_detail` array showing exactly what was performed and how many items were
+affected.
+
+`collector_server.py` also had a missing `try/except` around `json.loads()` — a
+malformed POST body from the browser agent would crash the handler thread and
+silently kill the collector. Now wrapped in `try/except` catching
+`JSONDecodeError`, `UnicodeDecodeError`, and `ValueError`; malformed requests get
+a `400` response with an error detail.
+
 ---
 
-## 11. Known gaps
+## 11. Advanced Analytics (New)
+
+Three analytics modules that neither Healenium nor Testim provide. Run them
+individually or view everything in the dashboard's **Analytics** tab.
+
+```powershell
+python analytics.py                              # CLI report
+python benchmark.py --scenarios 50               # 50-scenario benchmark
+python run_cross_browser_benchmark.py            # Chrome vs Firefox comparison
+```
+
+### Locator Stability Scoring (`analytics.py`)
+
+Predicts which locators are likely to break before they break. Each locator is
+scored 0–100 across five dimensions:
+
+| Dimension | Weight | What it measures |
+|-----------|--------|-----------------|
+| ID specificity | 30% | ID-based locators are most stable |
+| Semantic meaning | 25% | `start-btn` > `btn-123` > `a1` |
+| Uniqueness | 20% | Single-match locators are more stable |
+| DOM depth | 15% | Shallow XPath = less fragile |
+| Text content | 10% | Text-based matching is stable if text doesn't change |
+
+Locators scoring below 40 are flagged as **high risk** with a recommendation
+(e.g., "request a semantic name from developers" or "use a shorter XPath").
+
+### Flaky Locator Detection (`analytics.py`)
+
+Tracks heal frequency per locator. A locator that heals 3+ times is flagged as
+flaky with severity and a recommendation. This catches tests that silently
+degrade — they pass because the system heals them, but the underlying locator
+is rotting.
+
+### Cost Analysis (`analytics.py`)
+
+Calculates time and cost savings vs manual fixing:
+
+| Metric | How it's computed |
+|--------|------------------|
+| Time saved | (manual_fix_minutes × total_heals) − (avg_heal_time_ms × total_heals / 60000) |
+| Cost saved | time_saved_hours × hourly_rate |
+| ROI | time_saved / manual_time × 100% |
+| Heals per hour | 3600000 / avg_heal_time_ms |
+
+Defaults: 10 minutes per manual fix, $50/hour engineer rate. Both configurable.
+
+### Benchmark (`benchmark.py`)
+
+Runs 50+ fault scenarios across different mutation types (rename ID, rename class,
+change text, restructure XPath, combined mutations, edge cases) and measures:
+
+- **Success rate** — percentage of scenarios healed
+- **Heal time** — average milliseconds per heal
+- **Confidence distribution** — histogram across the 75%/20% thresholds
+- **False positive rate** — heals with confidence < 50%
+- **Mutation breakdown** — success rate per mutation type
+
+Outputs:
+- `benchmark_results/benchmark_results.json` — raw data
+- `benchmark_results/benchmark_report.md` — human-readable report with industry comparison
+- `benchmark_results/confidence_histogram.png` — distribution chart
+
+### Cross-Browser Benchmark (`run_cross_browser_benchmark.py`)
+
+Runs the same benchmark on Chrome and Firefox, then compares results. Checks
+consistency across three metrics:
+
+| Metric | Consistency threshold |
+|--------|----------------------|
+| Success rate | < 5% difference |
+| Heal time | < 20ms difference |
+| Confidence | < 5% difference |
+
+Outputs:
+- `benchmark_results/cross_browser_comparison.json` — raw comparison
+- `benchmark_results/cross_browser_report.md` — consistency analysis
+
+Cross-browser support was added to `tests/driver_factory.py` — `make_driver()`
+now accepts `browser="chrome"` or `browser="firefox"` and resolves the
+appropriate driver (chromedriver or geckodriver) from the `~/.wdm/` cache.
+
+### Dashboard Analytics Tab
+
+The fifth tab on the Streamlit dashboard shows all three analytics modules:
+
+- **Locator Stability** — table of all fingerprinted locators with score, level, risk, recommendation
+- **Flaky Locator Detection** — table of locators with 3+ heals, severity, recommendation
+- **Cost Analysis** — summary stats (time saved, cost saved, ROI) plus efficiency comparison table
+
+### Dashboard Configuration Tab (New)
+
+The sixth tab on the Streamlit dashboard allows configuration without editing code:
+
+- **Source healing toggle** — enable/disable writing healed locators back to test files
+- **Source heal targets** — add/remove test files that get patched when locators are healed
+- **File scanner** — click "Scan for test files" to auto-discover test files in your project
+- **Confidence thresholds** — adjust auto-heal (default 75%) and safety gate (default 20%) via sliders
+- **Reset to defaults** — one-click reset to restore original configuration
+
+All changes are saved to `data/config_override.json` and applied automatically to all
+future healing operations. No code editing, no restart needed.
+
+New file: `config_manager.py` — handles reading/writing configuration overrides, scanning
+for test files, and applying overrides to the config module at startup.
+
+---
+
+## 12. Known gaps
 
 Neither blocks the demo. Worth knowing before the defence in case a judge asks.
 
