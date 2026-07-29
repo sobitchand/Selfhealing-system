@@ -36,6 +36,7 @@ CONFIDENCE_THRESHOLD_LOW = 20.0   # Minimum acceptable match score before system
 SOURCE_HEAL_ENABLED = True
 SOURCE_HEAL_TARGETS = [
     os.path.join(BASE_DIR, "run_selenium_heal.py"),
+    os.path.join(BASE_DIR, "test_real_example.py"),
 ]
 
 # ---------------- Per-bucket atomic storage (see store.py) ----------------

@@ -46,7 +46,18 @@ class MetricsMonitor:
         while True:
             time.sleep(2)  # Update metrics slice every 2 seconds
             
-            # Mock disk utilization percentage simulation 
+            # Check for recovery marker written by infrastructure healer
+            marker_path = os.path.join(config.DATA_DIR, "recovery_marker.json")
+            if os.path.exists(marker_path):
+                try:
+                    os.remove(marker_path)
+                    self.error_count = 0
+                    self.total_requests = 0
+                    self.traffic_rate = 0
+                    print("⚙️ Recovery marker consumed — error counters reset")
+                except OSError:
+                    pass
+            
             simulated_disk = round(50.0 + (time.time() % 45), 2)
             
             error_rate = 0.0
