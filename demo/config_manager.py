@@ -43,8 +43,13 @@ def get_config():
         "source_heal_targets": config.SOURCE_HEAL_TARGETS,
         "confidence_threshold_high": config.CONFIDENCE_THRESHOLD_HIGH,
         "confidence_threshold_low": config.CONFIDENCE_THRESHOLD_LOW,
+        "approval_mode_enabled": config.APPROVAL_MODE_ENABLED,
+        "git_integration_enabled": config.GIT_INTEGRATION_ENABLED,
         "target_app_port": config.TARGET_APP_PORT,
         "bucket_limits": config.BUCKET_LIMITS,
+        "active_fingerprint_path": config.ACTIVE_FINGERPRINT_PATH,
+        "target_url": getattr(config, "TARGET_URL", f"http://127.0.0.1:{config.TARGET_APP_PORT}"),
+        "target_html_file": getattr(config, "TARGET_HTML_FILE", ""),
     }
     
     overrides = load_override()
@@ -89,6 +94,38 @@ def set_source_heal_enabled(enabled):
     update_config("source_heal_enabled", enabled)
 
 
+def set_approval_mode_enabled(enabled):
+    """Enable or disable approval mode for script updates."""
+    update_config("approval_mode_enabled", enabled)
+
+
+def set_git_integration_enabled(enabled):
+    """Enable or disable git integration for automatic PR creation."""
+    update_config("git_integration_enabled", enabled)
+
+
+def set_target_url(url):
+    """Set the target application URL."""
+    update_config("target_url", url)
+    if hasattr(config, "TARGET_URL"):
+        config.TARGET_URL = url
+
+
+def set_target_html_file(file_path):
+    """Set the target HTML file path."""
+    update_config("target_html_file", file_path)
+    if hasattr(config, "TARGET_HTML_FILE"):
+        config.TARGET_HTML_FILE = file_path
+
+
+def set_target_app_port(port):
+    """Set the target application port."""
+    update_config("target_app_port", port)
+    config.TARGET_APP_PORT = port
+    if hasattr(config, "TARGET_URL"):
+        config.TARGET_URL = f"http://127.0.0.1:{port}"
+
+
 def set_confidence_thresholds(high, low):
     """Set confidence thresholds for healing decisions."""
     update_config("confidence_threshold_high", high)
@@ -96,9 +133,25 @@ def set_confidence_thresholds(high, low):
 
 
 def reset_to_defaults():
-    """Reset all configuration to defaults."""
+    """Reset all configuration to defaults. Deletes override file and restores
+    in-memory config module values to their built-in defaults."""
     if os.path.exists(CONFIG_OVERRIDE_PATH):
         os.remove(CONFIG_OVERRIDE_PATH)
+
+    # Restore in-memory config module to built-in defaults
+    config.SOURCE_HEAL_ENABLED = True
+    config.SOURCE_HEAL_TARGETS = [
+        os.path.join(config.BASE_DIR, "test_comprehensive.py"),
+        os.path.join(config.BASE_DIR, "test_index.py"),
+    ]
+    config.CONFIDENCE_THRESHOLD_HIGH = 75.0
+    config.CONFIDENCE_THRESHOLD_LOW = 20.0
+    config.APPROVAL_MODE_ENABLED = False
+    config.GIT_INTEGRATION_ENABLED = False
+    config.TARGET_APP_PORT = int(os.environ.get("TARGET_APP_PORT", "8000"))
+    config.TARGET_URL = os.environ.get("TARGET_URL", f"http://127.0.0.1:{config.TARGET_APP_PORT}")
+    config.TARGET_HTML_FILE = os.environ.get("TARGET_HTML_FILE", "")
+    config.ACTIVE_FINGERPRINT_PATH = config.POMODORO_FINGERPRINTS_PATH
 
 
 def apply_overrides():
@@ -120,6 +173,27 @@ def apply_overrides():
     
     if "confidence_threshold_low" in overrides:
         config.CONFIDENCE_THRESHOLD_LOW = overrides["confidence_threshold_low"]
+    
+    if "approval_mode_enabled" in overrides:
+        config.APPROVAL_MODE_ENABLED = overrides["approval_mode_enabled"]
+    
+    if "git_integration_enabled" in overrides:
+        config.GIT_INTEGRATION_ENABLED = overrides["git_integration_enabled"]
+    
+    if "active_fingerprint_path" in overrides:
+        fp_path = overrides["active_fingerprint_path"]
+        if os.path.exists(fp_path):
+            config.ACTIVE_FINGERPRINT_PATH = fp_path
+            config.POMODORO_FINGERPRINTS_PATH = fp_path
+
+    if "target_url" in overrides:
+        config.TARGET_URL = overrides["target_url"]
+
+    if "target_html_file" in overrides:
+        config.TARGET_HTML_FILE = overrides["target_html_file"]
+
+    if "target_app_port" in overrides:
+        config.TARGET_APP_PORT = overrides["target_app_port"]
 
 
 def get_scan_directory():
@@ -145,3 +219,134 @@ def scan_test_files(directory=None):
                 test_files.append(rel_path)
     
     return sorted(test_files)
+
+
+def get_fingerprint_files():
+    """List all available fingerprint JSON files with metadata."""
+    fingerprints = []
+    
+    search_dirs = [config.DATA_DIR, config.FINGERPRINT_DIR]
+    
+    for search_dir in search_dirs:
+        if not os.path.exists(search_dir):
+            continue
+        
+        for filename in os.listdir(search_dir):
+            if filename.endswith('_fingerprints.json') or filename.endswith('_fp.json'):
+                full_path = os.path.join(search_dir, filename)
+                
+                try:
+                    with open(full_path, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                    
+                    element_count = len(data) if isinstance(data, dict) else 0
+                    
+                    fingerprints.append({
+                        'name': filename.replace('_fingerprints.json', '').replace('_fp.json', ''),
+                        'filename': filename,
+                        'path': full_path,
+                        'element_count': element_count,
+                        'is_active': full_path == config.ACTIVE_FINGERPRINT_PATH,
+                    })
+                except Exception:
+                    fingerprints.append({
+                        'name': filename.replace('_fingerprints.json', '').replace('_fp.json', ''),
+                        'filename': filename,
+                        'path': full_path,
+                        'element_count': -1,
+                        'is_active': full_path == config.ACTIVE_FINGERPRINT_PATH,
+                    })
+    
+    return sorted(fingerprints, key=lambda x: x['name'])
+
+
+def get_active_fingerprint():
+    """Get the currently active fingerprint file path."""
+    return config.ACTIVE_FINGERPRINT_PATH
+
+
+def set_active_fingerprint(path):
+    """Switch to a different fingerprint file. Returns True if successful."""
+    if not os.path.exists(path):
+        return False
+    
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            json.load(f)
+        
+        config.ACTIVE_FINGERPRINT_PATH = path
+        config.POMODORO_FINGERPRINTS_PATH = path
+        
+        update_config("active_fingerprint_path", path)
+        
+        return True
+    except Exception:
+        return False
+
+
+def create_fingerprint_file(app_name):
+    """Create a new empty fingerprint file for an app."""
+    if not app_name:
+        return None
+    
+    safe_name = app_name.lower().replace(' ', '_').replace('-', '_')
+    filename = f"{safe_name}_fingerprints.json"
+    
+    os.makedirs(config.FINGERPRINT_DIR, exist_ok=True)
+    filepath = os.path.join(config.FINGERPRINT_DIR, filename)
+    
+    if os.path.exists(filepath):
+        return filepath
+    
+    try:
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump({}, f, indent=2)
+        return filepath
+    except Exception:
+        return None
+
+
+def delete_fingerprint_file(path):
+    """Delete a fingerprint file. Returns True if successful."""
+    if not os.path.exists(path):
+        return False
+    
+    if path == config.ACTIVE_FINGERPRINT_PATH:
+        return False
+    
+    try:
+        os.remove(path)
+        return True
+    except Exception:
+        return False
+
+
+def get_fingerprint_preview(path, max_elements=5):
+    """Get a preview of a fingerprint file's contents."""
+    if not os.path.exists(path):
+        return None
+    
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        if not isinstance(data, dict):
+            return None
+        
+        preview = {
+            'total_elements': len(data),
+            'elements': []
+        }
+        
+        for key, fp in list(data.items())[:max_elements]:
+            preview['elements'].append({
+                'key': key,
+                'tag': fp.get('tag_name', 'unknown'),
+                'text': fp.get('inner_text', '')[:50],
+                'locator_by': fp.get('locator_by', 'unknown'),
+                'locator_value': fp.get('locator_value', 'unknown'),
+            })
+        
+        return preview
+    except Exception:
+        return None

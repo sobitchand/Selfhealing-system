@@ -4,8 +4,21 @@ from selenium.webdriver.common.by import By
 import dom_features
 
 class FingerprintManager:
-    # Tags treated as interactive/structural when auto-discovering elements.
-    INTERACTIVE_TAGS = ["button", "a", "input", "select", "textarea"]
+    # Rule-based: capture fingerprints for ALL elements that have a stable ID.
+    # Not just "interactive" elements. A <h1 id="page-title">, <p id="intro">,
+    # <img id="logo">, <li id="nav-home"> are all valid heal targets.
+    # The R1-R4 scoring works identically for any tag type.
+    CAPTURE_TAGS = [
+        "a", "abbr", "address", "article", "aside", "b", "button", "caption",
+        "cite", "code", "data", "dd", "del", "details", "dfn", "dialog", "div",
+        "dt", "em", "fieldset", "figcaption", "figure", "footer", "form",
+        "h1", "h2", "h3", "h4", "h5", "h6", "header", "i", "img", "input",
+        "kbd", "label", "legend", "li", "main", "mark", "nav", "ol", "optgroup",
+        "option", "output", "p", "pre", "progress", "q", "rp", "rt", "ruby",
+        "s", "samp", "section", "select", "small", "span", "strong", "sub",
+        "summary", "sup", "table", "tbody", "td", "textarea", "tfoot", "th",
+        "thead", "time", "tr", "u", "ul", "var", "video",
+    ]
 
     def __init__(self, driver, fingerprint_path):
         self.driver = driver
@@ -38,11 +51,13 @@ class FingerprintManager:
         self._save_registry()
 
     def scan_interactive(self):
-        """Learning Mode auto-discovery (proposal §3.4.2 / Fig 3.4): walk every
-        interactive element on the page and capture a Golden Fingerprint for each
-        one that has a stable id. Returns the number captured."""
+        """Learning Mode auto-discovery: walk ALL elements on the page and capture
+        a Golden Fingerprint for each one that has a stable id. Not limited to
+        'interactive' elements -- any tagged element with an ID is a valid heal
+        target (headers, paragraphs, images, labels, list items, etc.).
+        Returns the number captured."""
         captured = 0
-        for tag in self.INTERACTIVE_TAGS:
+        for tag in self.CAPTURE_TAGS:
             try:
                 elements = self.driver.find_elements(By.TAG_NAME, tag)
             except Exception:
@@ -58,7 +73,7 @@ class FingerprintManager:
                 except Exception:
                     continue
         self._save_registry()
-        print(f"📸 Learning Mode captured {captured} golden fingerprints.")
+        print(f"Learning Mode captured {captured} golden fingerprints.")
         return captured
 
     def _build_fingerprint(self, element, key, by, value):

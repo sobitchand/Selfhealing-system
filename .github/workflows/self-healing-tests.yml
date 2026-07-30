@@ -1,0 +1,141 @@
+name: Self-Healing Test Automation
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run tests every night at 2 AM
+    - cron: '0 2 * * *'
+
+jobs:
+  self-healing-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install selenium webdriver-manager
+    
+    - name: Setup Chrome
+      uses: browser-actions/setup-chrome@v1
+      with:
+        chrome-version: stable
+    
+    - name: Run Self-Healing Tests
+      env:
+        APPROVAL_MODE_ENABLED: 'true'
+        GIT_INTEGRATION_ENABLED: 'true'
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        cd demo
+        python run_selenium_heal.py
+    
+    - name: Check for Pending Approvals
+      if: always()
+      run: |
+        cd demo
+        python -c "
+        import json
+        import os
+        
+        queue_path = 'data/pending_heals.json'
+        if os.path.exists(queue_path):
+            with open(queue_path, 'r') as f:
+                queue = json.load(f)
+            
+            pending = [h for h in queue if h['status'] == 'pending']
+            
+            if pending:
+                print(f'::warning::{len(pending)} heal(s) pending approval')
+                for heal in pending:
+                    print(f'  - {heal[\"heal_id\"]}: {heal[\"script\"]} ({heal[\"confidence\"]}% confidence)')
+            else:
+                print('✅ No pending approvals')
+        else:
+            print('✅ No heals queued')
+        "
+    
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: self-healing-results
+        path: |
+          demo/data/
+          demo/qascreenshots/
+    
+    - name: Create PR for Healed Locators
+      if: success() && env.GIT_INTEGRATION_ENABLED == 'true'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        cd demo
+        python -c "
+        import json
+        import os
+        from git_integration import git_integration
+        
+        queue_path = 'data/pending_heals.json'
+        if os.path.exists(queue_path):
+            with open(queue_path, 'r') as f:
+                queue = json.load(f)
+            
+            approved = [h for h in queue if h['status'] == 'approved' and 'pr_url' not in h]
+            
+            for heal in approved:
+                print(f'Creating PR for {heal[\"heal_id\"]}...')
+                success, result, branch = git_integration.create_pr_for_heal(
+                    heal_id=heal['heal_id'],
+                    script_path=heal['script_path'],
+                    old_locator=heal['old_locator'],
+                    new_locator=heal['new_locator'],
+                    confidence=heal['confidence']
+                )
+                
+                if success:
+                    print(f'✅ PR created: {result}')
+                else:
+                    print(f'❌ Failed: {result}')
+        "
+
+  # Optional: Run performance benchmark
+  benchmark:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run Performance Benchmark
+      run: |
+        cd demo
+        python benchmark_performance.py --elements 100 --output benchmark_results.json
+    
+    - name: Upload Benchmark Results
+      uses: actions/upload-artifact@v4
+      with:
+        name: benchmark-results
+        path: demo/benchmark_results.json

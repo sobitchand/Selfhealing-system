@@ -22,10 +22,14 @@ def _now():
 
 
 # --------------------------- ACTIVE path ---------------------------
-def handle_active_heal(engine, broken_selector, candidates):
+def handle_active_heal(engine, broken_selector, candidates, approval_mode=False, script_path=None, line_number=None):
     """
     Synchronous heal. Scores live DOM candidates against the golden fingerprints,
     commits the result, and returns the decision so the caller can keep driving.
+
+    approval_mode: If True, queue the heal for human review instead of auto-applying
+    script_path: Path to the QA test script (required for approval_mode)
+    line_number: Line number where the broken locator appears (optional)
 
     Returns: (lifecycle, recovered_locator, confidence_score, match_id, best_candidate)
     match_id is the canonical fingerprint key (== element id) for source write-back.
@@ -34,7 +38,12 @@ def handle_active_heal(engine, broken_selector, candidates):
     used was the one that changed.
     """
     match_id, score, metrics, best_candidate = engine.evaluate_live_candidates(broken_selector, candidates)
-    lifecycle, recovered, match_id = engine.commit_heal_to_log(broken_selector, match_id, score, metrics)
+    lifecycle, recovered, match_id = engine.commit_heal_to_log(
+        broken_selector, match_id, score, metrics,
+        approval_mode=approval_mode,
+        script_path=script_path,
+        line_number=line_number
+    )
     return lifecycle, recovered, score, match_id, best_candidate
 
 

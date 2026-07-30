@@ -111,12 +111,15 @@ def session_stats():
 
 
 _engine = None
+_engine_fp_path = None
 
 
 def _get_engine():
-    global _engine
-    if _engine is None:
-        _engine = UIHeuristicEngine(fingerprint_path=config.POMODORO_FINGERPRINTS_PATH)
+    global _engine, _engine_fp_path
+    current_path = config.ACTIVE_FINGERPRINT_PATH
+    if _engine is None or _engine_fp_path != current_path:
+        _engine = UIHeuristicEngine(fingerprint_path=current_path)
+        _engine_fp_path = current_path
     return _engine
 
 
@@ -159,6 +162,9 @@ def attempt_heal(context, by, value):
                 return element
             except NoSuchElementException:
                 _session["cache"].pop((str(by), str(value)), None)  # went stale
+            except Exception as e:
+                print(f"⚠️ Cache validation failed: {e}")
+                _session["cache"].pop((str(by), str(value)), None)
 
         print(f"⚠️ Element Missing: [{broken_identity}]. Extracting DOM candidates...")
 
@@ -168,19 +174,54 @@ def attempt_heal(context, by, value):
             print(f"❌ Failed to parse DOM structure: {e}")
             raise NoSuchElementException(f"Self-healing aborted. DOM inaccessible: {e}")
 
+        if not candidates:
+            print(f"❌ No DOM candidates found. Page may be empty or inaccessible.")
+            raise NoSuchElementException(
+                f"Self-healing aborted. No elements found on page for '{broken_identity}'."
+            )
+
         print(f"🔬 Scanned {len(candidates)} structural layout candidates. Evaluating heuristics...")
 
         # ACTIVE request path: synchronous heal that returns a decision so we can
         # keep driving the browser (see handlers.handle_active_heal).
-        lifecycle, query_locator, confidence, match_id, best_candidate = handle_active_heal(
-            _get_engine(), broken_identity, candidates
-        )
+        # Pass approval mode configuration and script path for safe updates.
+        script_path = None
+        line_number = None
+        
+        # Try to detect the calling script for approval workflow
+        if config.APPROVAL_MODE_ENABLED:
+            import inspect
+            try:
+                frame = inspect.currentframe()
+                caller_frame = frame.f_back
+                while caller_frame:
+                    filename = caller_frame.f_code.co_filename
+                    if filename and not filename.endswith('automation_wrapper.py') and \
+                       not filename.endswith('healing_engine.py') and \
+                       not filename.endswith('handlers.py'):
+                        script_path = filename
+                        line_number = caller_frame.f_lineno
+                        break
+                    caller_frame = caller_frame.f_back
+            except Exception:
+                pass
+
+        try:
+            lifecycle, query_locator, confidence, match_id, best_candidate = handle_active_heal(
+                _get_engine(), broken_identity, candidates,
+                approval_mode=config.APPROVAL_MODE_ENABLED,
+                script_path=script_path,
+                line_number=line_number
+            )
+        except Exception as e:
+            print(f"❌ Healing engine failed: {e}")
+            raise NoSuchElementException(f"Self-healing engine error: {e}")
 
         # Threshold routing per Table 3.1:
         #   continue (>=75%) -> automatic heal
         #   verify   (20-75%) -> cautious heal: still reroute, but flag for review
         #   halt     (<20%)  -> stop + manual intervention
-        if lifecycle not in ("continue", "verify") or query_locator in (None, "unknown"):
+        if lifecycle not in ("continue", "verify", "pending_approval") or query_locator in (None, "unknown"):
             print(f"❌ Confidence below safety gate ({confidence}%). Manual intervention required.")
             feedback.record_failure(value)
             raise NoSuchElementException(
@@ -188,25 +229,107 @@ def attempt_heal(context, by, value):
                 f"({confidence}%). Manual admin intervention required."
             )
 
+        if lifecycle == "pending_approval":
+            print(f"⏳ Heal queued for approval! '{query_locator}' (Confidence: {confidence}%)")
+            print(f"   Review in dashboard: Approval Queue tab")
+            # Still return the element for runtime healing, but don't update source
+            element = None
+            live_xpath = (best_candidate or {}).get("xpath")
+            if live_xpath:
+                try:
+                    element = driver.find_element(By.XPATH, live_xpath)
+                except NoSuchElementException:
+                    element = None
+            if element is None:
+                try:
+                    element = driver.find_element(By.CSS_SELECTOR, query_locator)
+                except NoSuchElementException:
+                    raise NoSuchElementException(
+                        f"Heal candidate not found in DOM. Approval queued for '{query_locator}'."
+                    )
+            
+            feedback.verify_and_record(value, element)
+            if live_xpath:
+                _session["cache"][(str(by), str(value))] = live_xpath
+            
+            _session["heals"].append({
+                "locator": broken_identity,
+                "resolved_to": query_locator,
+                "resolved_tag": (best_candidate or {}).get("tag_name", ""),
+                "resolved_text": (best_candidate or {}).get("inner_text", "")[:40],
+                "confidence": round(float(confidence), 2),
+                "policy": "PENDING APPROVAL",
+                "match_id": match_id,
+                "ms": round((time.perf_counter() - started) * 1000, 1),
+            })
+            return element
+
         tier = "Auto-Heal" if lifecycle == "continue" else "Cautious Heal (flagged for review)"
         print(f"✨ {tier}! Rerouting to '{query_locator}' (Confidence: {confidence}%)")
 
-        # Re-grab the healed element. Prefer the winning LIVE candidate's freshly
-        # scraped xpath: renaming a class/id/attribute does not move the element,
-        # so its xpath stays valid even when the attribute the old selector used
-        # is the one that changed. Fall back to the css selector built from the
-        # golden fingerprint (the id-rename path).
+        # Multi-locator strategy: Try multiple locator strategies in order of preference
+        # 1. Live XPath from DOM scan (most accurate)
+        # 2. Generated multi-locators (ID → CSS → XPath)
+        # 3. Original query locator (fallback)
         element = None
         live_xpath = (best_candidate or {}).get("xpath")
+        used_strategy = None
+        
+        # Strategy 1: Live XPath from DOM scan
         if live_xpath:
             try:
                 element = driver.find_element(By.XPATH, live_xpath)
+                used_strategy = "live_xpath"
+                print(f"   ✓ Found using live XPath from DOM scan")
             except NoSuchElementException:
                 element = None
+            except Exception as e:
+                print(f"⚠️ Live XPath lookup failed: {e}")
+                element = None
+        
+        # Strategy 2: Multi-locator fallback (ID → CSS → XPath)
+        if element is None and match_id:
+            multi_locators = _get_engine().generate_multi_locators(match_id, best_candidate)
+            
+            for locator_info in multi_locators:
+                try:
+                    by_type = locator_info["by"]
+                    value = locator_info["value"]
+                    strategy = locator_info["strategy"]
+                    
+                    if by_type == "id":
+                        element = driver.find_element(By.ID, value)
+                    elif by_type == "css selector":
+                        element = driver.find_element(By.CSS_SELECTOR, value)
+                    elif by_type == "xpath":
+                        element = driver.find_element(By.XPATH, value)
+                    
+                    if element:
+                        used_strategy = strategy
+                        print(f"   ✓ Found using {strategy}: {value}")
+                        live_xpath = value if by_type == "xpath" else live_xpath
+                        break
+                except NoSuchElementException:
+                    continue
+                except Exception as e:
+                    print(f"⚠️ {locator_info['strategy']} lookup failed: {e}")
+                    continue
+        
+        # Strategy 3: Original query locator (CSS selector fallback)
         if element is None:
             try:
                 element = driver.find_element(By.CSS_SELECTOR, query_locator)
+                used_strategy = "css_fallback"
+                print(f"   ✓ Found using CSS fallback: {query_locator}")
             except NoSuchElementException:
+                count, escalated = feedback.record_failure(value)
+                raise NoSuchElementException(
+                    f"Heal candidate not found in DOM ({count} consecutive fails). "
+                    f"Tried: live_xpath, multi-locators, css_fallback. "
+                    f"{'Escalated.' if escalated else ''}"
+                )
+            except Exception as e:
+                print(f"⚠️ CSS selector lookup failed: {e}")
                 count, escalated = feedback.record_failure(value)
                 raise NoSuchElementException(
                     f"Heal candidate not found in DOM ({count} consecutive fails). "
@@ -232,7 +355,8 @@ def attempt_heal(context, by, value):
 
         # Automation-level recovery (secondary): on high-confidence heals, write
         # the corrected locator back into the test source too.
-        if lifecycle == "continue":
+        # Skip if approval mode is enabled (approval workflow handles this).
+        if lifecycle == "continue" and not config.APPROVAL_MODE_ENABLED:
             try:
                 healed_token = _get_engine().canonical_locator(match_id)
                 source_healer.patch_source(broken_token=value, healed_token=healed_token)

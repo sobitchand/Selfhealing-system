@@ -56,7 +56,8 @@ def install(fingerprints=None, heal_find_elements=False):
     _wrapper.HEAL_FIND_ELEMENTS = bool(heal_find_elements)
 
     if fingerprints:
-        config.POMODORO_FINGERPRINTS_PATH = os.path.abspath(fingerprints)
+        config.ACTIVE_FINGERPRINT_PATH = os.path.abspath(fingerprints)
+        config.POMODORO_FINGERPRINTS_PATH = config.ACTIVE_FINGERPRINT_PATH
         _wrapper._engine = None  # rebuilt against the new baseline on next heal
 
     _originals["driver_find_element"] = WebDriver.find_element
@@ -140,8 +141,8 @@ def learn_baseline(driver, url=None, force=False):
     with _wrapper.suppressed():
         if force:
             return FingerprintManager(
-                driver, fingerprint_path=config.POMODORO_FINGERPRINTS_PATH
+                driver, fingerprint_path=config.ACTIVE_FINGERPRINT_PATH
             ).scan_interactive()
         return learning_mode.ensure_fingerprints(
-            driver, config.POMODORO_FINGERPRINTS_PATH
+            driver, config.ACTIVE_FINGERPRINT_PATH
         )

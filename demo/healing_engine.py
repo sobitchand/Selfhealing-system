@@ -12,7 +12,9 @@ import config
 import store
 
 class UIHeuristicEngine:
-    def __init__(self, fingerprint_path=config.POMODORO_FINGERPRINTS_PATH):
+    def __init__(self, fingerprint_path=None):
+        if fingerprint_path is None:
+            fingerprint_path = config.ACTIVE_FINGERPRINT_PATH
         self.fingerprint_path = fingerprint_path
         self.reload_fingerprints()
 
@@ -111,12 +113,12 @@ class UIHeuristicEngine:
 
         for element_key, golden in search_space.items():
             for cand in candidates:
-                # Tag family must match (BUTTON vs button normalised); acts as gate.
+                # Rule-based tag handling: tag mismatch is a SCORE PENALTY, not a hard skip.
+                # A <button> refactored to <a> can still heal (with lower confidence).
+                # Same-tag match gets no penalty; different-tag gets -25% penalty.
                 golden_tag = str(golden.get("tag_name", "")).lower()
                 cand_tag = str(cand.get("tag_name", "")).lower()
-
-                if cand_tag != golden_tag:
-                    continue
+                tag_penalty = 0.0 if cand_tag == golden_tag else 25.0
 
                 # Weighted heuristic per proposal Table 3.1 (R1-R4).
                 r1 = self.calculate_similarity(cand.get("inner_text", ""), golden.get("inner_text", ""))         # text
@@ -124,7 +126,7 @@ class UIHeuristicEngine:
                 r3 = self.calculate_similarity(cand.get("css_class", ""), golden.get("css_class", ""))           # css
                 r4 = self.calculate_neighbor_similarity(cand.get("neighbors", []), golden.get("neighbors", []))  # neighbors
 
-                composite_score = (r1 * 0.40) + (r2 * 0.30) + (r3 * 0.20) + (r4 * 0.10)
+                composite_score = (r1 * 0.40) + (r2 * 0.30) + (r3 * 0.20) + (r4 * 0.10) - tag_penalty
 
                 if composite_score > highest_score:
                     highest_score = composite_score
@@ -153,6 +155,82 @@ class UIHeuristicEngine:
             return element_id
         return str(golden.get("locator_value", "")).lstrip("#")
 
+    def generate_multi_locators(self, match_id, best_candidate=None):
+        """Generate multiple locator strategies for a healed element.
+        
+        Returns a list of locator strategies in order of preference:
+        1. ID (most stable)
+        2. CSS Selector (good balance)
+        3. XPath (most flexible)
+        
+        This allows the system to try multiple strategies and fallback if one fails.
+        """
+        golden = self.fingerprints.get(match_id) if match_id else None
+        if not golden:
+            return []
+        
+        locators = []
+        
+        # Strategy 1: ID (most stable)
+        element_id = golden.get("element_id")
+        if element_id:
+            locators.append({
+                "strategy": "id",
+                "by": "id",
+                "value": element_id,
+                "confidence": 95,
+                "description": "Element ID (most stable)"
+            })
+        
+        # Strategy 2: CSS Selector (good balance)
+        css_class = golden.get("css_class", "")
+        tag_name = golden.get("tag_name", "")
+        if css_class and tag_name:
+            css_selector = f"{tag_name}.{css_class.replace(' ', '.')}"
+            locators.append({
+                "strategy": "css",
+                "by": "css selector",
+                "value": css_selector,
+                "confidence": 85,
+                "description": "CSS Selector (tag + class)"
+            })
+        
+        # Strategy 3: XPath with text (most flexible)
+        inner_text = golden.get("inner_text", "")
+        if inner_text and tag_name:
+            xpath = f"//{tag_name}[text()='{inner_text}']"
+            locators.append({
+                "strategy": "xpath",
+                "by": "xpath",
+                "value": xpath,
+                "confidence": 75,
+                "description": "XPath with text content"
+            })
+        
+        # Strategy 4: XPath from candidate (if available)
+        if best_candidate and best_candidate.get("xpath"):
+            locators.append({
+                "strategy": "xpath_live",
+                "by": "xpath",
+                "value": best_candidate["xpath"],
+                "confidence": 90,
+                "description": "Live XPath from DOM scan"
+            })
+        
+        # Strategy 5: Original locator (fallback)
+        locator_value = golden.get("locator_value", "")
+        locator_by = golden.get("locator_by", "")
+        if locator_value and locator_by:
+            locators.append({
+                "strategy": "original",
+                "by": locator_by,
+                "value": locator_value,
+                "confidence": 70,
+                "description": "Original locator from fingerprint"
+            })
+        
+        return locators
+
     def update_metadata_locator(self, match_id):
         """Self-Correction: persist the healed locator into the golden-fingerprint
         metadata (proposal §3.4.3 Step 6 / Fig 3.3 'Update Metadata Repository').
@@ -176,8 +254,13 @@ class UIHeuristicEngine:
             print(f"⚠️ metadata self-correction failed for '{match_id}': {e}")
             return ""
 
-    def commit_heal_to_log(self, broken_selector, match_id, score, metrics):
-        """Applies confidence policies and persists the heal result (ACTIVE path)."""
+    def commit_heal_to_log(self, broken_selector, match_id, score, metrics, approval_mode=False, script_path=None, line_number=None):
+        """Applies confidence policies and persists the heal result (ACTIVE path).
+        
+        approval_mode: If True, queue the heal for human review instead of auto-applying
+        script_path: Path to the QA test script (required for approval_mode)
+        line_number: Line number where the broken locator appears (optional)
+        """
         timestamp = datetime.utcnow().isoformat() + "+00:00"
 
         if score >= config.CONFIDENCE_THRESHOLD_HIGH:
@@ -206,18 +289,46 @@ class UIHeuristicEngine:
                 "source": "UIHeuristicEngine"
             })
         else:
-            # Self-Correction: persist healed locator into golden-fingerprint metadata.
             healed_locator = self.update_metadata_locator(match_id)
-            store.append("ui_heals", {
-                "timestamp": timestamp,
-                "broken_selector": broken_selector,
-                "recovered_selector": recovered_val,
-                "healed_locator": healed_locator,
-                "confidence_score": round(score, 2),
-                "policy": policy,
-                "status": status,
-                "details": {"component_scores": metrics}
-            })
+            
+            if approval_mode and script_path:
+                from approval_workflow import workflow
+                old_locator = broken_selector
+                new_locator = healed_locator
+                
+                heal_id = workflow.queue_heal(
+                    script_path=script_path,
+                    old_locator=old_locator,
+                    new_locator=new_locator,
+                    confidence=score,
+                    metrics=metrics,
+                    line_number=line_number
+                )
+                
+                lifecycle = "pending_approval"
+                
+                store.append("ui_heals", {
+                    "timestamp": timestamp,
+                    "broken_selector": broken_selector,
+                    "recovered_selector": recovered_val,
+                    "healed_locator": healed_locator,
+                    "confidence_score": round(score, 2),
+                    "policy": policy,
+                    "status": "pending_approval",
+                    "heal_id": heal_id,
+                    "details": {"component_scores": metrics}
+                })
+            else:
+                store.append("ui_heals", {
+                    "timestamp": timestamp,
+                    "broken_selector": broken_selector,
+                    "recovered_selector": recovered_val,
+                    "healed_locator": healed_locator,
+                    "confidence_score": round(score, 2),
+                    "policy": policy,
+                    "status": status,
+                    "details": {"component_scores": metrics}
+                })
 
         return lifecycle, recovered_val, match_id
 
