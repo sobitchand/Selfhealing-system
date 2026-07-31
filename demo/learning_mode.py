@@ -36,9 +36,18 @@ def _has_baseline(fingerprint_path):
         return False
 
 
-def ensure_fingerprints(driver, fingerprint_path):
+def ensure_fingerprints(driver, fingerprint_path, force=False):
     """Auto-bootstrap the baseline if missing. Returns True if it ran Learning
-    Mode, False if a baseline already existed (no-op)."""
+    Mode, False if a baseline already existed (no-op).
+
+    When force=True, any existing baseline is deleted and rebuilt from the
+    current page — use this after the good HTML has been modified so stale
+    fingerprints don't persist."""
+    if force:
+        try:
+            os.remove(fingerprint_path)
+        except OSError:
+            pass
     if _has_baseline(fingerprint_path):
         return False
     print("🧠 No baseline fingerprints found — entering LEARNING MODE...")

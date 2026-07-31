@@ -1,0 +1,354 @@
+{
+  "forgot-password-link": {
+    "key": "forgot-password-link",
+    "locator_by": "id",
+    "locator_value": "forgot-password-link",
+    "element_id": "forgot-password-link",
+    "element_name": "",
+    "inner_text": "Forgot Password?",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/div[1]/a[1]",
+    "css_class": "nav-link text-small",
+    "tag_name": "a",
+    "neighbors": [
+      {
+        "tag_name": "a",
+        "text": "Need Help?"
+      }
+    ],
+    "aria_label": "",
+    "placeholder": "",
+    "data_attrs": {}
+  },
+  "help-link": {
+    "key": "help-link",
+    "locator_by": "id",
+    "locator_value": "help-link",
+    "element_id": "help-link",
+    "element_name": "",
+    "inner_text": "Need Help?",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/div[1]/a[2]",
+    "css_class": "nav-link text-small",
+    "tag_name": "a",
+    "neighbors": [
+      {
+        "tag_name": "a",
+        "text": "Forgot Password?"
+      }
+    ],
+    "aria_label": "",
+    "placeholder": "",
+    "data_attrs": {}
+  },
+  "submit-btn": {
+    "key": "submit-btn",
+    "locator_by": "id",
+    "locator_value": "submit-btn",
+    "element_id": "submit-btn",
+    "element_name": "",
+    "inner_text": "Log In",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/form[1]/div[3]/button[1]",
+    "css_class": "btn btn-primary",
+    "tag_name": "button",
+    "neighbors": [
+      {
+        "tag_name": "button",
+        "text": "Clear Form"
+      }
+    ],
+    "aria_label": "",
+    "placeholder": "",
+    "data_attrs": {},
+    "healed_locator_value": "#sum-btn",
+    "healed_locator_by": "css selector",
+    "healed_source_token": "sum-btn"
+  },
+  "reset-btn": {
+    "key": "reset-btn",
+    "locator_by": "id",
+    "locator_value": "reset-btn",
+    "element_id": "reset-btn",
+    "element_name": "",
+    "inner_text": "Clear Form",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/form[1]/div[3]/button[2]",
+    "css_class": "btn btn-danger",
+    "tag_name": "button",
+    "neighbors": [
+      {
+        "tag_name": "button",
+        "text": "Log In"
+      }
+    ],
+    "aria_label": "",
+    "placeholder": "",
+    "data_attrs": {}
+  },
+  "main-container": {
+    "key": "main-container",
+    "locator_by": "id",
+    "locator_value": "main-container",
+    "element_id": "main-container",
+    "element_name": "",
+    "inner_text": "User Authentication\nPlease log in to your dashboard.\nUsername\nPassword\nLog In Clear Form\nForgot Password? | Need Help?",
+    "xpath_pattern": "/html[1]/body[1]/div[1]",
+    "css_class": "card",
+    "tag_name": "div",
+    "neighbors": [],
+    "aria_label": "",
+    "placeholder": "",
+    "data_attrs": {}
+  },
+  "username-group": {
+    "key": "username-group",
+    "locator_by": "id",
+    "locator_value": "username-group",
+    "element_id": "username-group",
+    "element_name": "",
+    "inner_text": "Username",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/form[1]/div[1]",
+    "css_class": "form-group",
+    "tag_name": "div",
+    "neighbors": [
+      {
+        "tag_name": "div",
+        "text": "Password"
+      },
+      {
+        "tag_name": "div",
+        "text": "Log In Clear Form"
+      }
+    ],
+    "aria_label": "",
+    "placeholder": "",
+    "data_attrs": {}
+  },
+  "password-group": {
+    "key": "password-group",
+    "locator_by": "id",
+    "locator_value": "password-group",
+    "element_id": "password-group",
+    "element_name": "",
+    "inner_text": "Password",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/form[1]/div[2]",
+    "css_class": "form-group",
+    "tag_name": "div",
+    "neighbors": [
+      {
+        "tag_name": "div",
+        "text": "Username"
+      },
+      {
+        "tag_name": "div",
+        "text": "Log In Clear Form"
+      }
+    ],
+    "aria_label": "",
+    "placeholder": "",
+    "data_attrs": {}
+  },
+  "div::Log In Clear Form": {
+    "key": "div::Log In Clear Form",
+    "locator_by": "css selector",
+    "locator_value": "div.Log In Clear Form",
+    "element_id": "",
+    "element_name": "",
+    "inner_text": "Log In Clear Form",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/form[1]/div[3]",
+    "css_class": "action-buttons",
+    "tag_name": "div",
+    "neighbors": [
+      {
+        "tag_name": "div",
+        "text": "Username"
+      },
+      {
+        "tag_name": "div",
+        "text": "Password"
+      }
+    ],
+    "aria_label": "",
+    "placeholder": "",
+    "data_attrs": {}
+  },
+  "footer-links": {
+    "key": "footer-links",
+    "locator_by": "id",
+    "locator_value": "footer-links",
+    "element_id": "footer-links",
+    "element_name": "",
+    "inner_text": "Forgot Password? | Need Help?",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/div[1]",
+    "css_class": "navigation-links",
+    "tag_name": "div",
+    "neighbors": [
+      {
+        "tag_name": "h1",
+        "text": "User Authentication"
+      },
+      {
+        "tag_name": "p",
+        "text": "Please log in to your dashboard."
+      },
+      {
+        "tag_name": "form",
+        "text": "Username\nPassword\nLog In Clear Form"
+      }
+    ],
+    "aria_label": "",
+    "placeholder": "",
+    "data_attrs": {}
+  },
+  "login-form": {
+    "key": "login-form",
+    "locator_by": "id",
+    "locator_value": "login-form",
+    "element_id": "login-form",
+    "element_name": "",
+    "inner_text": "Username\nPassword\nLog In Clear Form",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/form[1]",
+    "css_class": "",
+    "tag_name": "form",
+    "neighbors": [
+      {
+        "tag_name": "h1",
+        "text": "User Authentication"
+      },
+      {
+        "tag_name": "p",
+        "text": "Please log in to your dashboard."
+      },
+      {
+        "tag_name": "div",
+        "text": "Forgot Password? | Need Help?"
+      }
+    ],
+    "aria_label": "",
+    "placeholder": "",
+    "data_attrs": {}
+  },
+  "page-heading": {
+    "key": "page-heading",
+    "locator_by": "id",
+    "locator_value": "page-heading",
+    "element_id": "page-heading",
+    "element_name": "",
+    "inner_text": "User Authentication",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/h1[1]",
+    "css_class": "title",
+    "tag_name": "h1",
+    "neighbors": [
+      {
+        "tag_name": "p",
+        "text": "Please log in to your dashboard."
+      },
+      {
+        "tag_name": "form",
+        "text": "Username\nPassword\nLog In Clear Form"
+      },
+      {
+        "tag_name": "div",
+        "text": "Forgot Password? | Need Help?"
+      }
+    ],
+    "aria_label": "",
+    "placeholder": "",
+    "data_attrs": {}
+  },
+  "username-input": {
+    "key": "username-input",
+    "locator_by": "id",
+    "locator_value": "username-input",
+    "element_id": "username-input",
+    "element_name": "",
+    "inner_text": "",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/form[1]/div[1]/input[1]",
+    "css_class": "input-field control-user",
+    "tag_name": "input",
+    "neighbors": [
+      {
+        "tag_name": "label",
+        "text": "Username"
+      }
+    ],
+    "aria_label": "",
+    "placeholder": "Enter username",
+    "data_attrs": {}
+  },
+  "password-input": {
+    "key": "password-input",
+    "locator_by": "id",
+    "locator_value": "password-input",
+    "element_id": "password-input",
+    "element_name": "",
+    "inner_text": "",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/form[1]/div[2]/input[1]",
+    "css_class": "input-field control-pass",
+    "tag_name": "input",
+    "neighbors": [
+      {
+        "tag_name": "label",
+        "text": "Password"
+      }
+    ],
+    "aria_label": "",
+    "placeholder": "Enter password",
+    "data_attrs": {}
+  },
+  "label::Username": {
+    "key": "label::Username",
+    "locator_by": "css selector",
+    "locator_value": "label.Username",
+    "element_id": "",
+    "element_name": "",
+    "inner_text": "Username",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/form[1]/div[1]/label[1]",
+    "css_class": "",
+    "tag_name": "label",
+    "neighbors": [],
+    "aria_label": "",
+    "placeholder": "",
+    "data_attrs": {}
+  },
+  "label::Password": {
+    "key": "label::Password",
+    "locator_by": "css selector",
+    "locator_value": "label.Password",
+    "element_id": "",
+    "element_name": "",
+    "inner_text": "Password",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/form[1]/div[2]/label[1]",
+    "css_class": "",
+    "tag_name": "label",
+    "neighbors": [],
+    "aria_label": "",
+    "placeholder": "",
+    "data_attrs": {}
+  },
+  "sub-heading": {
+    "key": "sub-heading",
+    "locator_by": "id",
+    "locator_value": "sub-heading",
+    "element_id": "sub-heading",
+    "element_name": "",
+    "inner_text": "Please log in to your dashboard.",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/p[1]",
+    "css_class": "description",
+    "tag_name": "p",
+    "neighbors": [
+      {
+        "tag_name": "h1",
+        "text": "User Authentication"
+      },
+      {
+        "tag_name": "form",
+        "text": "Username\nPassword\nLog In Clear Form"
+      },
+      {
+        "tag_name": "div",
+        "text": "Forgot Password? | Need Help?"
+      }
+    ],
+    "aria_label": "",
+    "placeholder": "",
+    "data_attrs": {}
+  }
+}

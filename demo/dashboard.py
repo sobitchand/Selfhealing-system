@@ -924,7 +924,7 @@ with tab_config:
                                 learn_url = f"http://127.0.0.1:{target_port}/{target_html}"
                                 driver.get(learn_url)
                                 with automation_wrapper.suppressed():
-                                    count = learning_mode.ensure_fingerprints(driver, active_fp)
+                                    count = learning_mode.ensure_fingerprints(driver, active_fp, force=True)
                                 st.success(f"✓ Captured {count} fingerprints from {target_html}")
                             finally:
                                 driver.quit()
