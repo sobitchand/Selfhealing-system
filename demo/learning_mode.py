@@ -3,9 +3,19 @@ Learning Mode (proposal §3.3 Step 1, §3.4.2, Fig 3.4).
 
 The system maps the application UI BEFORE any failure. If no baseline fingerprint
 metadata exists, it auto-enters Learning Mode: scan the live AUT, capture a Golden
-Fingerprint for every interactive element, and persist it. Healing Mode can then
-compare against this baseline. This also covers the "Database Recovery" test
+Fingerprint for every element, and persist it. Healing Mode can then compare
+against this baseline. This also covers the "Database Recovery" test
 (§3.8.3): delete the fingerprint JSON and it rebuilds itself on the next run.
+
+Two capture paths exist:
+  1. Pre-scan (scan_interactive): walks all elements on the page and captures
+     fingerprints for every element with an id, text, or class — not just
+     id-bearing elements.
+  2. Inline learning (report §3.3.1 Step 2): during the test run itself, every
+     successful find_element / find_elements call captures a fingerprint for
+     the located element(s), keyed by the locator the test script used. This
+     is what ties a broken CSS-class or XPath locator back to the element the
+     script intended, even when the element has no id.
 """
 
 import os

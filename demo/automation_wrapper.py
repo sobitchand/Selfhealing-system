@@ -71,6 +71,66 @@ def suppressed():
         yield
 
 
+# --------------------------------------------------------------------------
+# Inline Learning Mode (report §3.3.1 Step 2):
+# "Each time a locator resolves successfully, the corresponding element's
+#  fingerprint is captured or refreshed."
+#
+# When learning is enabled, every successful find_element / find_elements call
+# captures a Golden Fingerprint for the located element(s), keyed by the locator
+# value the test script used. This is what ties a broken locator on Day 2 back
+# to the element the script intended on Day 1 — regardless of whether the
+# locator was by ID, CSS class, CSS selector, or XPath.
+# --------------------------------------------------------------------------
+_learning = False
+_fingerprint_mgr = None
+
+
+def enable_learning(driver):
+    """Enable inline learning: capture a fingerprint every time find_element
+    succeeds. The driver is needed to build fingerprints (xpath, neighbors)."""
+    global _learning, _fingerprint_mgr
+    from fingerprint_manager import FingerprintManager
+    _fingerprint_mgr = FingerprintManager(driver, fingerprint_path=config.ACTIVE_FINGERPRINT_PATH)
+    _fingerprint_mgr.registry = _fingerprint_mgr._load_registry()
+    _learning = True
+
+
+def disable_learning():
+    """Stop capturing and persist the fingerprint registry to disk."""
+    global _learning, _fingerprint_mgr
+    _learning = False
+    if _fingerprint_mgr:
+        _fingerprint_mgr.save()
+        _fingerprint_mgr = None
+
+
+def is_learning():
+    return _learning
+
+
+def _capture_on_success(element, by, value):
+    """Capture a fingerprint for an element the test script just found."""
+    if not _learning or _fingerprint_mgr is None:
+        return
+    try:
+        _fingerprint_mgr.capture_from_locator(element, by, value)
+    except Exception:
+        pass
+
+
+def _capture_list_on_success(elements, by, value):
+    """Capture fingerprints for all elements returned by find_elements."""
+    if not _learning or _fingerprint_mgr is None:
+        return
+    for idx, element in enumerate(elements):
+        try:
+            composite_value = f"{value}[{idx}]" if len(elements) > 1 else value
+            _fingerprint_mgr.capture_from_locator(element, by, composite_value)
+        except Exception:
+            pass
+
+
 # find_elements returning [] is a normal, meaningful answer ("no error messages
 # on screen"), not a failure signal the way a raised NoSuchElementException is.
 # Healing it turns every legitimate absence into a false positive, so it is off
@@ -196,9 +256,16 @@ def attempt_heal(context, by, value):
                 caller_frame = frame.f_back
                 while caller_frame:
                     filename = caller_frame.f_code.co_filename
+                    # Skip framework/interceptor frames so we land on the QA
+                    # script itself. selfheal.py hosts the monkey-patched
+                    # find_element interceptor, so without excluding it the
+                    # approval workflow would silently queue the heal against
+                    # selfheal.py (whose text never contained the broken id)
+                    # and the dashboard diff would be empty.
                     if filename and not filename.endswith('automation_wrapper.py') and \
                        not filename.endswith('healing_engine.py') and \
-                       not filename.endswith('handlers.py'):
+                       not filename.endswith('handlers.py') and \
+                       not filename.endswith('selfheal.py'):
                         script_path = filename
                         line_number = caller_frame.f_lineno
                         break
@@ -222,7 +289,7 @@ def attempt_heal(context, by, value):
         #   verify   (20-75%) -> cautious heal: still reroute, but flag for review
         #   halt     (<20%)  -> stop + manual intervention
         if lifecycle not in ("continue", "verify", "pending_approval") or query_locator in (None, "unknown"):
-            print(f"❌ Confidence below safety gate ({confidence}%). Manual intervention required.")
+            print(f"❌ Confidence below safety gate ({round(confidence, 2)}%). Manual intervention required.")
             feedback.record_failure(value)
             raise NoSuchElementException(
                 f"Self-healing fallback failed. Dynamic matching score too low "
@@ -230,7 +297,7 @@ def attempt_heal(context, by, value):
             )
 
         if lifecycle == "pending_approval":
-            print(f"⏳ Heal queued for approval! '{query_locator}' (Confidence: {confidence}%)")
+            print(f"⏳ Heal queued for approval! '{query_locator}' (Confidence: {round(confidence, 2)}%)")
             print(f"   Review in dashboard: Approval Queue tab")
             # Still return the element for runtime healing, but don't update source
             element = None
@@ -265,7 +332,7 @@ def attempt_heal(context, by, value):
             return element
 
         tier = "Auto-Heal" if lifecycle == "continue" else "Cautious Heal (flagged for review)"
-        print(f"✨ {tier}! Rerouting to '{query_locator}' (Confidence: {confidence}%)")
+        print(f"✨ {tier}! Rerouting to '{query_locator}' (Confidence: {round(confidence, 2)}%)")
 
         # Multi-locator strategy: Try multiple locator strategies in order of preference
         # 1. Live XPath from DOM scan (most accurate)
@@ -358,7 +425,7 @@ def attempt_heal(context, by, value):
         # Skip if approval mode is enabled (approval workflow handles this).
         if lifecycle == "continue" and not config.APPROVAL_MODE_ENABLED:
             try:
-                healed_token = _get_engine().canonical_locator(match_id)
+                healed_token = _get_engine().canonical_locator(match_id, best_candidate)
                 source_healer.patch_source(broken_token=value, healed_token=healed_token)
             except Exception as e:
                 print(f"⚠️ Source write-back skipped: {e}")
@@ -405,7 +472,9 @@ class SelfHealingWebDriver:
 
     def find_element(self, by, value):
         try:
-            return self.driver.find_element(by, value)
+            element = self.driver.find_element(by, value)
+            _capture_on_success(element, by, value)
+            return element
         except NoSuchElementException:
             if healing_in_progress():
                 raise
@@ -413,6 +482,8 @@ class SelfHealingWebDriver:
 
     def find_elements(self, by, value):
         found = self.driver.find_elements(by, value)
+        if found:
+            _capture_list_on_success(found, by, value)
         if found or healing_in_progress() or not HEAL_FIND_ELEMENTS:
             return found
         return attempt_heal_list(self.driver, by, value)

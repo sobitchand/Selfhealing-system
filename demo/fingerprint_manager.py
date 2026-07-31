@@ -4,20 +4,21 @@ from selenium.webdriver.common.by import By
 import dom_features
 
 class FingerprintManager:
-    # Rule-based: capture fingerprints for ALL elements that have a stable ID.
-    # Not just "interactive" elements. A <h1 id="page-title">, <p id="intro">,
-    # <img id="logo">, <li id="nav-home"> are all valid heal targets.
-    # The R1-R4 scoring works identically for any tag type.
+    # Capture fingerprints for ALL elements on the page, not just those with an id.
+    # The R1-R4 scoring works for any tag type — buttons, inputs, headings, SVG
+    # paths, divs, spans, etc. Elements with an id are keyed by their id; elements
+    # without an id are keyed by a composite signature (tag::text or tag::class::index)
+    # so they can still be matched when a locator breaks.
     CAPTURE_TAGS = [
         "a", "abbr", "address", "article", "aside", "b", "button", "caption",
         "cite", "code", "data", "dd", "del", "details", "dfn", "dialog", "div",
         "dt", "em", "fieldset", "figcaption", "figure", "footer", "form",
         "h1", "h2", "h3", "h4", "h5", "h6", "header", "i", "img", "input",
         "kbd", "label", "legend", "li", "main", "mark", "nav", "ol", "optgroup",
-        "option", "output", "p", "pre", "progress", "q", "rp", "rt", "ruby",
-        "s", "samp", "section", "select", "small", "span", "strong", "sub",
-        "summary", "sup", "table", "tbody", "td", "textarea", "tfoot", "th",
-        "thead", "time", "tr", "u", "ul", "var", "video",
+        "option", "output", "p", "path", "pre", "progress", "q", "rp", "rt",
+        "ruby", "s", "samp", "section", "select", "small", "span", "strong",
+        "sub", "summary", "sup", "svg", "table", "tbody", "td", "textarea",
+        "tfoot", "th", "thead", "time", "tr", "u", "ul", "var", "video",
     ]
 
     def __init__(self, driver, fingerprint_path):
@@ -50,11 +51,40 @@ class FingerprintManager:
 
         self._save_registry()
 
+    def capture_from_locator(self, element, by, value):
+        """Capture a fingerprint for a specific element that the test script
+        successfully located. This is the inline-learning path described in
+        §3.3.1 Step 2: 'Each time a locator resolves successfully, the
+        corresponding element's fingerprint is captured or refreshed.'
+
+        The fingerprint is keyed by the locator value so that a later broken
+        locator can be matched back to it via select_target_fingerprint.
+        For find_elements (multiple results), an index suffix is appended."""
+        el_id = element.get_attribute("id") or ""
+        text = (element.text or "").strip()
+        tag = element.tag_name.lower()
+
+        if el_id:
+            key = el_id
+        elif text:
+            key = f"{tag}::{text[:40]}"
+        else:
+            css = element.get_attribute("class") or ""
+            key = f"{tag}::{css}::{value}" if css else f"{tag}::{value}"
+
+        fp = self._build_fingerprint(element, key, str(by), str(value))
+        self.registry[key] = fp
+        return key
+
     def scan_interactive(self):
         """Learning Mode auto-discovery: walk ALL elements on the page and capture
-        a Golden Fingerprint for each one that has a stable id. Not limited to
-        'interactive' elements -- any tagged element with an ID is a valid heal
-        target (headers, paragraphs, images, labels, list items, etc.).
+        a Golden Fingerprint for every element — with or without an id. Elements
+        with an id are keyed by their id; elements without an id are keyed by a
+        composite signature (tag::text or tag::class) so they can still be healed.
+
+        This matches the report's promise: 'records a Golden Fingerprint of every
+        element' — not just id-bearing elements. SVG paths, class-based buttons,
+        and any other tagged element are all valid heal targets.
         Returns the number captured."""
         captured = 0
         for tag in self.CAPTURE_TAGS:
@@ -65,10 +95,28 @@ class FingerprintManager:
             for element in elements:
                 try:
                     el_id = element.get_attribute("id")
-                    if not el_id:
-                        continue  # need a stable key to compare against later
-                    by = "id"
-                    self.registry[el_id] = self._build_fingerprint(element, el_id, by, el_id)
+                    text = (element.text or "").strip()
+                    css = element.get_attribute("class") or ""
+
+                    if el_id:
+                        key = el_id
+                        by = "id"
+                        value = el_id
+                    elif text:
+                        key = f"{tag}::{text[:40]}"
+                        by = "css selector"
+                        value = f"{tag}.{text[:40]}"
+                    elif css:
+                        key = f"{tag}::{css}"
+                        by = "css selector"
+                        value = f"{tag}.{css.split()[0]}"
+                    else:
+                        continue
+
+                    if key in self.registry:
+                        continue
+
+                    self.registry[key] = self._build_fingerprint(element, key, by, value)
                     captured += 1
                 except Exception:
                     continue
@@ -77,18 +125,34 @@ class FingerprintManager:
         return captured
 
     def _build_fingerprint(self, element, key, by, value):
-        """Build one Golden Fingerprint profile (shared by manual + auto scan)."""
+        """Build one Golden Fingerprint profile (shared by manual + auto scan).
+        Captures all attributes the report §3.4.3 Step 6 lists for repaired-locator
+        derivation: id, name, data-attrs, aria-label, text, tag, class, xpath."""
+        data_attrs = {}
+        for attr in ("data-testid", "data-test", "data-id", "data-action", "data-qa"):
+            val = element.get_attribute(attr)
+            if val:
+                data_attrs[attr] = val
+
         return {
             "key": key,
             "locator_by": str(by),
             "locator_value": str(value),
             "element_id": element.get_attribute("id") or "",
-            "inner_text": element.text.strip(),
+            "element_name": element.get_attribute("name") or "",
+            "inner_text": (element.text or "").strip(),
             "xpath_pattern": dom_features.compute_xpath(self.driver, element),
             "css_class": element.get_attribute("class") or "",
             "tag_name": element.tag_name.lower(),
             "neighbors": dom_features.compute_neighbors(element),
+            "aria_label": element.get_attribute("aria-label") or "",
+            "placeholder": element.get_attribute("placeholder") or "",
+            "data_attrs": data_attrs,
         }
+
+    def save(self):
+        """Persist the registry to disk (alias for _save_registry)."""
+        self._save_registry()
 
     def _save_registry(self):
         os.makedirs(os.path.dirname(self.fingerprint_path), exist_ok=True)

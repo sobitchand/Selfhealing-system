@@ -37,12 +37,16 @@ def handle_active_heal(engine, broken_selector, candidates, approval_mode=False,
     the caller can re-grab the element even when the attribute the old selector
     used was the one that changed.
     """
-    match_id, score, metrics, best_candidate = engine.evaluate_live_candidates(broken_selector, candidates)
+    match_id, score, metrics, best_candidate, reason, second_score = engine.evaluate_live_candidates(broken_selector, candidates)
+    
     lifecycle, recovered, match_id = engine.commit_heal_to_log(
         broken_selector, match_id, score, metrics,
         approval_mode=approval_mode,
         script_path=script_path,
-        line_number=line_number
+        line_number=line_number,
+        best_candidate=best_candidate,
+        reason=reason,
+        second_score=second_score,
     )
     return lifecycle, recovered, score, match_id, best_candidate
 

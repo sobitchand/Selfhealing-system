@@ -24,6 +24,7 @@ only variable is whether this layer is installed.
 """
 
 import os
+from contextlib import contextmanager
 
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.remote.webdriver import WebDriver
@@ -39,7 +40,7 @@ def is_installed():
     return bool(_originals)
 
 
-def install(fingerprints=None, heal_find_elements=False):
+def install(fingerprints=None, heal_find_elements=None):
     """Patch Selenium in-process. Idempotent.
 
     fingerprints: optional path to a golden-fingerprint registry, so one runner
@@ -53,7 +54,11 @@ def install(fingerprints=None, heal_find_elements=False):
     if _originals:
         return False
 
-    _wrapper.HEAL_FIND_ELEMENTS = bool(heal_find_elements)
+    # If caller explicitly passed True/False, respect it; otherwise use default from config
+    if heal_find_elements is None:
+        _wrapper.HEAL_FIND_ELEMENTS = bool(getattr(config, 'HEAL_FIND_ELEMENTS', False))
+    else:
+        _wrapper.HEAL_FIND_ELEMENTS = bool(heal_find_elements)
 
     if fingerprints:
         config.ACTIVE_FINGERPRINT_PATH = os.path.abspath(fingerprints)
@@ -67,7 +72,9 @@ def install(fingerprints=None, heal_find_elements=False):
 
     def driver_find_element(self, by=None, value=None):
         try:
-            return _originals["driver_find_element"](self, by, value)
+            element = _originals["driver_find_element"](self, by, value)
+            _wrapper._capture_on_success(element, by, value)
+            return element
         except NoSuchElementException:
             if _wrapper.healing_in_progress():
                 raise
@@ -75,23 +82,26 @@ def install(fingerprints=None, heal_find_elements=False):
 
     def driver_find_elements(self, by=None, value=None):
         found = _originals["driver_find_elements"](self, by, value)
+        if found:
+            _wrapper._capture_list_on_success(found, by, value)
         if found or _wrapper.healing_in_progress() or not _wrapper.HEAL_FIND_ELEMENTS:
             return found
         return _wrapper.attempt_heal_list(self, by, value)
 
     def element_find_element(self, by=None, value=None):
         try:
-            return _originals["element_find_element"](self, by, value)
+            element = _originals["element_find_element"](self, by, value)
+            _wrapper._capture_on_success(element, by, value)
+            return element
         except NoSuchElementException:
             if _wrapper.healing_in_progress():
                 raise
-            # Scoped lookups heal against the whole document: the element the
-            # test wanted still exists, the container it was scoped to is what
-            # the refactor moved.
             return _wrapper.attempt_heal(self, by, value)
 
     def element_find_elements(self, by=None, value=None):
         found = _originals["element_find_elements"](self, by, value)
+        if found:
+            _wrapper._capture_list_on_success(found, by, value)
         if found or _wrapper.healing_in_progress() or not _wrapper.HEAL_FIND_ELEMENTS:
             return found
         return _wrapper.attempt_heal_list(self, by, value)
@@ -122,9 +132,29 @@ session_heals = _wrapper.session_heals
 session_stats = _wrapper.session_stats
 
 
+@contextmanager
+def learning_mode(driver):
+    """Context manager that enables inline learning for the duration of a block.
+
+    Usage (report §3.4.2 — Learning Mode bound to a passing run):
+
+        with selfheal.learning_mode(driver):
+            run_tests(driver)  # every successful find_element captures a fingerprint
+
+    Fingerprints are persisted to disk when the block exits. Healing is
+    suppressed during learning so the discovery pass cannot generate heals
+    of its own (report §3.4.5 safeguard).
+    """
+    _wrapper.enable_learning(driver)
+    try:
+        with _wrapper.suppressed():
+            yield
+    finally:
+        _wrapper.disable_learning()
+
+
 def learn_baseline(driver, url=None, force=False):
     """Capture / refresh the golden fingerprint baseline from a KNOWN-GOOD build.
-
     Real usage: point this at staging before a release, then run the suite
     against the refactored build. Never learn from a broken page -- that would
     bake the fault into the baseline.

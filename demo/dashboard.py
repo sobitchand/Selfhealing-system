@@ -203,6 +203,52 @@ with tab_ui:
             unsafe_allow_html=True,
         )
 
+        # ---- Per-heal detail: Reason for repair + QA recommendation (report §3.7) ----
+        st.markdown(
+            theme.section(
+                "Heal details",
+                "Every heal includes a human-readable reason explaining which "
+                "attributes matched and which changed, plus a recommendation "
+                "for the QA team.",
+            ),
+            unsafe_allow_html=True,
+        )
+        for record in newest_first(records, limit=ROW_LIMIT):
+            reason = record.get("reason") or "No reason recorded."
+            recommendation = record.get("recommendation") or "No recommendation recorded."
+            margin = record.get("margin_over_second")
+            broken = esc(record.get("broken_selector"))
+            recovered = esc(record.get("recovered_selector"))
+            conf = pct(record.get("confidence_score"))
+            components = (record.get("details") or {}).get("component_scores", {}) \
+                if isinstance(record.get("details"), dict) else {}
+
+            with st.expander(
+                f"{broken} → {recovered} ({conf})",
+                expanded=False,
+            ):
+                col_a, col_b = st.columns([1, 1])
+                with col_a:
+                    st.markdown("**Reason for repair**")
+                    st.info(reason)
+                    if margin is not None:
+                        st.caption(f"Margin over second-best candidate: {margin}%")
+                with col_b:
+                    st.markdown("**Recommendation for QA**")
+                    st.warning(recommendation)
+
+                st.markdown("**Rule breakdown**")
+                r1 = components.get("R1_inner_text_40", components.get("R1_text_40", 0))
+                r2 = components.get("R2_xpath_pattern_30", components.get("R2_xpath_30", 0))
+                r3 = components.get("R3_css_class_20", components.get("R3_css_20", 0))
+                r4 = components.get("R4_neighbors_10", 0)
+                st.markdown(
+                    f"- R1 (visible text, 40%): **{r1:.0f}%**\n"
+                    f"- R2 (XPath structure, 30%): **{r2:.0f}%**\n"
+                    f"- R3 (CSS class, 20%): **{r3:.0f}%**\n"
+                    f"- R4 (neighbouring elements, 10%): **{r4:.0f}%**"
+                )
+
         st.markdown(theme.section("Confidence over time"), unsafe_allow_html=True)
         chart_df = df.copy()
         chart_df["when"] = pd.to_datetime(
@@ -233,6 +279,43 @@ with tab_ui:
         )
         st.plotly_chart(figure, use_container_width=True,
                         config={"displayModeBar": False})
+
+        # ---- Log history per locator (report §3.7) ----
+        st.markdown(
+            theme.section(
+                "Log history by locator",
+                "Every heal event for a given broken locator, chronologically, "
+                "so recurring breakage on the same element is visible at a glance.",
+            ),
+            unsafe_allow_html=True,
+        )
+        by_locator = {}
+        for r in sorted(records, key=lambda x: x.get("timestamp", "")):
+            loc = r.get("broken_selector", "unknown")
+            by_locator.setdefault(loc, []).append(r)
+        for loc, events in by_locator.items():
+            if len(events) >= 1:
+                with st.expander(
+                    f"{esc(loc)} — {len(events)} heal(s)",
+                    expanded=False,
+                ):
+                    hist_rows = []
+                    for e in events:
+                        hist_rows.append({
+                            "time": esc(clock(e.get("timestamp"))),
+                            "confidence": pct(e.get("confidence_score")),
+                            "recovered": esc(e.get("recovered_selector")),
+                            "status": theme.pill(e.get("status")),
+                        })
+                    st.markdown(
+                        theme.table(
+                            hist_rows,
+                            [("time", "Time"), ("confidence", "Confidence"),
+                             ("recovered", "Recovered"), ("status", "Outcome")],
+                            aligns={"confidence": "num"},
+                        ),
+                        unsafe_allow_html=True,
+                    )
 
 # --------------------------------------------------------------------------
 # Approval Queue
