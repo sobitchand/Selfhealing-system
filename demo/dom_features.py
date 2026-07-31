@@ -5,6 +5,8 @@ the golden fingerprint and the live candidate are described the same way, so the
 R2 (xpath) and R4 (neighbor) heuristics compare like-for-like.
 """
 
+import re
+
 from selenium.webdriver.common.by import By
 
 # JS that builds an absolute, indexed xpath for an element (matches the
@@ -103,6 +105,13 @@ function getXPath(el) {
 }
 
 function textOf(el) { return ((el.innerText || el.textContent) || '').trim(); }
+function attrOf(el, name) { var v = el.getAttribute(name); return v ? v.trim() : ''; }
+
+// Attributes the Locator Recovery Engine ranks by stability when it derives the
+// repaired locator (report §3.4.3 Step 6). These MUST be collected here: the
+// engine prefers the LIVE element's attribute over the golden one, because the
+// golden value is by definition the stale one that just failed.
+var DATA_ATTRS = ['data-testid', 'data-test', 'data-id', 'data-action', 'data-qa', 'data-cy'];
 
 var out = [], all = document.querySelectorAll('*');
 for (var i = 0; i < all.length && out.length < limit; i++) {
@@ -121,16 +130,89 @@ for (var i = 0; i < all.length && out.length < limit; i++) {
     if (txt) { neighbors.push({ tag_name: sibs[k].tagName.toLowerCase(), text: txt.slice(0, 50) }); }
   }
 
+  var dataAttrs = {};
+  for (var d = 0; d < DATA_ATTRS.length; d++) {
+    var dv = attrOf(el, DATA_ATTRS[d]);
+    if (dv) { dataAttrs[DATA_ATTRS[d]] = dv; }
+  }
+
   out.push({
     tag_name: tag,
     inner_text: textOf(el),
-    css_class: (el.getAttribute('class') || '').trim(),
+    css_class: attrOf(el, 'class'),
     xpath: getXPath(el),
-    neighbors: neighbors
+    neighbors: neighbors,
+    element_id: el.id || '',
+    element_name: attrOf(el, 'name'),
+    input_type: attrOf(el, 'type'),
+    href: attrOf(el, 'href'),
+    placeholder: attrOf(el, 'placeholder'),
+    aria_label: attrOf(el, 'aria-label'),
+    data_attrs: dataAttrs
   });
 }
 return out;
 """
+
+
+_INDEX_RE = re.compile(r"\[\d+\]")
+
+
+def relative_xpath(xpath):
+    """The tag path with positional indices stripped: '/html/body/div/button'.
+
+    R2 compares structure, and an absolute indexed path is not a structural
+    description -- inserting one wrapper <div> renumbers every segment below it
+    even though nothing moved relative to its parent. Comparing the index-free
+    tag sequence lets an inserted container cost a little similarity instead of
+    resetting the whole comparison. Derived in Python from the absolute path so
+    the golden fingerprint and the live candidate are guaranteed to be reduced
+    by identical code (see the like-for-like note above).
+    """
+    return _INDEX_RE.sub("", str(xpath or ""))
+
+
+# Containers and non-rendered tags are skipped when reporting what a developer
+# added or removed. <body> and <script> "change" whenever anything inside them
+# changes, which is noise: it restates the edit rather than describing it.
+SNAPSHOT_EXCLUDED_TAGS = {"html", "head", "body", "script", "style", "noscript", "template"}
+
+
+def page_signature(driver, limit=400):
+    """A compact description of every element on the page, for change detection.
+
+    The Golden Fingerprint baseline holds only the locators a test depends on,
+    so it cannot answer "what did the developer add?" -- everything the suite
+    never touched would look new. This records the whole page as it stood on the
+    day the baseline was learned, so a later comparison reports the elements
+    that genuinely appeared rather than the ones that were simply never tracked.
+    """
+    signatures = []
+    for cand in collect_candidates(driver, limit=limit):
+        if cand.get("tag_name") in SNAPSHOT_EXCLUDED_TAGS:
+            continue
+        signatures.append({
+            "tag_name": cand.get("tag_name", ""),
+            "rel_xpath": relative_xpath(cand.get("xpath", "")),
+            "inner_text": (cand.get("inner_text") or "")[:60],
+            "element_id": cand.get("element_id", ""),
+            "css_class": cand.get("css_class", ""),
+        })
+    return signatures
+
+
+def signature_key(entry):
+    """Identity used to decide whether two snapshots describe the same element.
+
+    Deliberately ignores position: an element that merely moved is not a new
+    element, and reporting it as one would bury the real addition in noise.
+    """
+    return (
+        str(entry.get("tag_name", "")),
+        str(entry.get("element_id", "")),
+        str(entry.get("inner_text", "")).strip(),
+        str(entry.get("css_class", "")).strip(),
+    )
 
 
 def collect_candidates(driver, limit=200, neighbor_limit=3):

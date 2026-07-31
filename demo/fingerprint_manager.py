@@ -57,20 +57,17 @@ class FingerprintManager:
         §3.3.1 Step 2: 'Each time a locator resolves successfully, the
         corresponding element's fingerprint is captured or refreshed.'
 
-        The fingerprint is keyed by the locator value so that a later broken
-        locator can be matched back to it via select_target_fingerprint.
-        For find_elements (multiple results), an index suffix is appended."""
-        el_id = element.get_attribute("id") or ""
-        text = (element.text or "").strip()
-        tag = element.tag_name.lower()
+        The fingerprint is keyed by the LOCATOR the script used -- "<by>::<value>"
+        -- not by the element's id. Two locators may address the same element
+        (By.ID 'qty' and By.NAME 'quantity' often do), and each needs its own
+        baseline entry: keying by element id made the second lookup overwrite
+        the first, silently dropping one of the test's dependencies. Keying by
+        locator also means a broken locator is resolved on Day 2 by exact lookup
+        rather than by guessing which fingerprint id it most resembles, which is
+        what lets CSS, XPath, NAME and LINK_TEXT locators heal as reliably as ID.
 
-        if el_id:
-            key = el_id
-        elif text:
-            key = f"{tag}::{text[:40]}"
-        else:
-            css = element.get_attribute("class") or ""
-            key = f"{tag}::{css}::{value}" if css else f"{tag}::{value}"
+        For find_elements (multiple results), an index suffix is appended."""
+        key = f"{by}::{value}"
 
         fp = self._build_fingerprint(element, key, str(by), str(value))
         self.registry[key] = fp
@@ -138,6 +135,11 @@ class FingerprintManager:
             "key": key,
             "locator_by": str(by),
             "locator_value": str(value),
+            # Exact identity of the locator the test script used. Healing Mode
+            # looks this up directly, so a broken locator resolves to the element
+            # the script intended instead of to whatever fingerprint id it most
+            # resembles. Works for every By strategy, not just By.ID.
+            "locator_key": f"{by}::{value}",
             "element_id": element.get_attribute("id") or "",
             "element_name": element.get_attribute("name") or "",
             "inner_text": (element.text or "").strip(),
@@ -147,6 +149,8 @@ class FingerprintManager:
             "neighbors": dom_features.compute_neighbors(element),
             "aria_label": element.get_attribute("aria-label") or "",
             "placeholder": element.get_attribute("placeholder") or "",
+            "input_type": element.get_attribute("type") or "",
+            "href": element.get_attribute("href") or "",
             "data_attrs": data_attrs,
         }
 

@@ -1,1 +1,8 @@
-[]
+[
+  {
+    "timestamp": "2026-07-31T10:56:51.847683+00:00",
+    "severity": "critical",
+    "message": "Recovery declined for link text='Need help?': best match scored 19.9%, below the 20% safety gate. No element was clicked.",
+    "source": "UIHeuristicEngine"
+  }
+]

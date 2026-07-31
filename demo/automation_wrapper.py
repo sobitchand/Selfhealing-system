@@ -18,6 +18,8 @@ conditions call find_element internally, so a heal inside find_element turns
 what would have been a TimeoutException into a passing wait.
 """
 
+import json
+import os
 import threading
 import time
 from contextlib import contextmanager
@@ -29,6 +31,7 @@ from healing_engine import UIHeuristicEngine
 from handlers import handle_active_heal
 import dom_features
 import feedback
+import run_context
 import source_healer
 import config
 
@@ -84,51 +87,135 @@ def suppressed():
 # --------------------------------------------------------------------------
 _learning = False
 _fingerprint_mgr = None
+# Whole-page snapshot taken on the first successful lookup of a learning run,
+# held until the run is known to have passed (see disable_learning).
+_pending_snapshot = None
 
 
-def enable_learning(driver):
+def enable_learning(driver=None):
     """Enable inline learning: capture a fingerprint every time find_element
-    succeeds. The driver is needed to build fingerprints (xpath, neighbors)."""
+    succeeds.
+
+    The driver may be omitted. A located element already knows the driver that
+    produced it (WebElement.parent), so the fingerprint manager is built on the
+    first successful lookup instead. That lets a test script switch learning on
+    before it has created a browser.
+    """
     global _learning, _fingerprint_mgr
-    from fingerprint_manager import FingerprintManager
-    _fingerprint_mgr = FingerprintManager(driver, fingerprint_path=config.ACTIVE_FINGERPRINT_PATH)
-    _fingerprint_mgr.registry = _fingerprint_mgr._load_registry()
+    _fingerprint_mgr = _build_fingerprint_manager(driver) if driver is not None else None
     _learning = True
 
 
-def disable_learning():
-    """Stop capturing and persist the fingerprint registry to disk."""
-    global _learning, _fingerprint_mgr
+def _build_fingerprint_manager(driver):
+    from fingerprint_manager import FingerprintManager
+    manager = FingerprintManager(driver, fingerprint_path=config.ACTIVE_FINGERPRINT_PATH)
+    manager.registry = manager._load_registry()
+    return manager
+
+
+def snapshot_path(fingerprint_path=None):
+    """Where the Day-1 whole-page snapshot for a baseline lives."""
+    base = fingerprint_path or config.ACTIVE_FINGERPRINT_PATH
+    root, _ext = os.path.splitext(base)
+    return root + "_snapshot.json"
+
+
+def disable_learning(persist=True):
+    """Stop capturing.
+
+    persist=False discards everything captured in this run. Learning Mode is
+    bound to a PASSING run (report §3.4.2): a fingerprint taken from a run that
+    failed would record the fault itself as the reference state, and every later
+    comparison would be measured against a broken model.
+    """
+    global _learning, _fingerprint_mgr, _pending_snapshot
     _learning = False
     if _fingerprint_mgr:
-        _fingerprint_mgr.save()
+        if persist:
+            _fingerprint_mgr.save()
         _fingerprint_mgr = None
+    if persist and _pending_snapshot:
+        try:
+            path = snapshot_path()
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            tmp = path + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(_pending_snapshot, f, indent=2)
+            os.replace(tmp, path)
+        except Exception as e:
+            print(f"⚠️ page snapshot not saved: {e}")
+    _pending_snapshot = None
 
 
 def is_learning():
     return _learning
 
 
+@contextmanager
+def _capturing():
+    """Re-entrancy guard for the capture path.
+
+    Building a fingerprint drives the browser: compute_xpath runs a script and
+    compute_neighbors calls element.find_elements. Once Selenium is patched,
+    that sibling lookup comes straight back through the interceptor and would
+    capture the neighbours -- whose own capture would look up THEIR neighbours,
+    and so on. The guard makes every nested lookup a plain Selenium call.
+    """
+    previous = getattr(_local, "capturing", False)
+    _local.capturing = True
+    try:
+        yield previous
+    finally:
+        _local.capturing = previous
+
+
+def _capture_active():
+    return _learning and not getattr(_local, "capturing", False) and not healing_in_progress()
+
+
 def _capture_on_success(element, by, value):
     """Capture a fingerprint for an element the test script just found."""
-    if not _learning or _fingerprint_mgr is None:
+    global _fingerprint_mgr
+    if not _capture_active():
         return
+    global _pending_snapshot
     try:
-        _fingerprint_mgr.capture_from_locator(element, by, value)
+        with _capturing():
+            if _fingerprint_mgr is None:
+                driver = getattr(element, "parent", None)
+                if driver is None:
+                    return
+                _fingerprint_mgr = _build_fingerprint_manager(driver)
+                if _pending_snapshot is None:
+                    _pending_snapshot = dom_features.page_signature(driver)
+            key = _fingerprint_mgr.capture_from_locator(element, by, value)
+            run_context.note_locator(key)
     except Exception:
         pass
 
 
 def _capture_list_on_success(elements, by, value):
     """Capture fingerprints for all elements returned by find_elements."""
-    if not _learning or _fingerprint_mgr is None:
+    global _fingerprint_mgr
+    if not _capture_active() or not elements:
         return
-    for idx, element in enumerate(elements):
-        try:
-            composite_value = f"{value}[{idx}]" if len(elements) > 1 else value
-            _fingerprint_mgr.capture_from_locator(element, by, composite_value)
-        except Exception:
-            pass
+    try:
+        with _capturing():
+            if _fingerprint_mgr is None:
+                driver = getattr(elements[0], "parent", None)
+                if driver is None:
+                    return
+                _fingerprint_mgr = _build_fingerprint_manager(driver)
+            for idx, element in enumerate(elements):
+                try:
+                    composite = f"{value}[{idx}]" if len(elements) > 1 else value
+                    run_context.note_locator(
+                        _fingerprint_mgr.capture_from_locator(element, by, composite)
+                    )
+                except Exception:
+                    continue
+    except Exception:
+        pass
 
 
 # find_elements returning [] is a normal, meaningful answer ("no error messages
@@ -316,9 +403,10 @@ def attempt_heal(context, by, value):
                     )
             
             feedback.verify_and_record(value, element)
+            run_context.note_locator(f"{by}::{value}")
             if live_xpath:
                 _session["cache"][(str(by), str(value))] = live_xpath
-            
+
             _session["heals"].append({
                 "locator": broken_identity,
                 "resolved_to": query_locator,
@@ -405,6 +493,12 @@ def attempt_heal(context, by, value):
 
         # Verify (post-heal validation) + reset/track the loop counter.
         feedback.verify_and_record(value, element)
+
+        # A healed locator is still a locator the test depends on. Without this,
+        # the healed lookups drop out of the test's recorded footprint the next
+        # time it passes, because only raw successful lookups reach the capture
+        # path -- the test would appear to depend on fewer elements each run.
+        run_context.note_locator(f"{by}::{value}")
 
         if live_xpath:
             _session["cache"][(str(by), str(value))] = live_xpath

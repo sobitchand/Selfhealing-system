@@ -20,9 +20,13 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
+import app_registry
 import config
 import config_manager
+import reports
+import run_context
 import store
+import test_registry
 import theme
 
 # Apply configuration overrides at startup
@@ -91,9 +95,45 @@ st.markdown(
 )
 
 # --------------------------------------------------------------------------
-# Sidebar — live metrics from the target application
+# Sidebar — scope: which application, which test, which run.
+#
+# Every heal, refusal and drift report is stamped with the run that produced it
+# (run_context), so the whole page can be narrowed to one execution instead of
+# showing one undifferentiated list across every application ever tested.
 # --------------------------------------------------------------------------
+ALL = "All"
+
 with st.sidebar:
+    st.markdown("### Scope")
+
+    apps = app_registry.list_apps()
+    app_labels = [ALL] + [a["app_id"] for a in apps]
+    selected_app = st.selectbox("Application", app_labels, key="scope_app")
+
+    tests = test_registry.list_tests(selected_app) if selected_app != ALL else []
+    test_labels = [ALL] + [t["test_id"] for t in tests]
+    selected_test = st.selectbox("Test", test_labels, key="scope_test",
+                                 disabled=selected_app == ALL)
+
+    runs = run_context.list_runs(
+        app_id=None if selected_app == ALL else selected_app,
+        test_id=None if selected_test == ALL else selected_test,
+        limit=40,
+    )
+    run_labels = [ALL] + [
+        f"{r['run_id']}  ({r.get('status', '?')}, {r.get('heal_count', 0)} heals)"
+        for r in runs
+    ]
+    selected_run_label = st.selectbox("Run", run_labels, key="scope_run")
+    selected_run_id = (
+        None if selected_run_label == ALL
+        else selected_run_label.split("  ")[0]
+    )
+
+    if not apps:
+        st.info("No applications registered.\n\n`python cli.py register --app <id> --url <url>`")
+
+    st.divider()
     st.markdown("### Live Metrics")
     
     # Read metrics directly with robust error handling
@@ -128,15 +168,238 @@ with st.sidebar:
     else:
         st.info("No metrics data available yet. Start the target application.")
 
-tab_ui, tab_approval, tab_source, tab_infra, tab_alerts, tab_analytics, tab_config = st.tabs(
-    ["Locator healing", "Approval Queue", "Source write-back", "Infrastructure", "Alerts", "Analytics", "Configuration"]
+def in_scope(record):
+    """Whether a stamped record belongs to the current selection.
+
+    Records written before run stamping existed carry no app/test/run, so they
+    are only shown when nothing is being filtered -- otherwise an unattributable
+    row would appear under whichever application happened to be selected.
+    """
+    if selected_run_id:
+        return record.get("run_id") == selected_run_id
+    if selected_app != ALL and record.get("app_id") != selected_app:
+        return False
+    if selected_test != ALL and record.get("test_id") != selected_test:
+        return False
+    return True
+
+
+def scoped(bucket):
+    return [record for record in logs.get(bucket, []) if in_scope(record)]
+
+
+scope_label = (
+    selected_run_id if selected_run_id
+    else f"{selected_app}"
+    + (f" / {selected_test}" if selected_test != ALL else "")
 )
+
+tab_apps, tab_ui, tab_approval, tab_drift, tab_source, tab_infra, tab_alerts, tab_analytics, tab_config = st.tabs(
+    ["Applications", "Locator healing", "Approval Queue", "Change impact", "Source write-back",
+     "Infrastructure", "Alerts", "Analytics", "Configuration"]
+)
+
+# --------------------------------------------------------------------------
+# Applications — the registry, its baselines, its tests and its runs
+# --------------------------------------------------------------------------
+with tab_apps:
+    st.markdown(
+        theme.section(
+            "Registered applications",
+            "Each application has its own Golden Fingerprint baseline, learned "
+            "from a passing test run. Nothing here is specific to any one "
+            "application: register a URL and run a Selenium script against it.",
+        ),
+        unsafe_allow_html=True,
+    )
+
+    if not apps:
+        st.markdown(
+            theme.empty("No applications registered yet. "
+                        "Run: python cli.py register --app <id> --url <url>"),
+            unsafe_allow_html=True,
+        )
+    else:
+        rows = []
+        for record in apps:
+            fingerprints = load_json_file(record.get("fingerprint_path", ""), dict)
+            app_tests = test_registry.list_tests(record["app_id"])
+            rows.append({
+                "app": esc(record["app_id"]),
+                "name": esc(record.get("app_name", "")),
+                "url": esc((record.get("base_url") or "—")[:60]),
+                "baseline": (f"{len(fingerprints)} element(s)" if fingerprints
+                             else theme.pill("failed")),
+                "recorded": esc(clock(record.get("baseline_recorded_at")) or "never"),
+                "tests": len(app_tests),
+            })
+        st.markdown(
+            theme.table(rows, [
+                ("app", "Application"), ("name", "Name"), ("url", "URL / file"),
+                ("baseline", "Fingerprint status"), ("recorded", "Baseline recorded"),
+                ("tests", "Tests"),
+            ], aligns={"app": "mono", "url": "mono", "tests": "num"}),
+            unsafe_allow_html=True,
+        )
+
+    if selected_app != ALL:
+        st.markdown(theme.section(f"Tests — {selected_app}",
+                                  "Registered on first run. The locators listed are the "
+                                  "ones each test actually resolved during a passing run, "
+                                  "not a hand-maintained list."),
+                    unsafe_allow_html=True)
+        app_tests = test_registry.list_tests(selected_app)
+        if not app_tests:
+            st.markdown(theme.empty("No test has run against this application yet."),
+                        unsafe_allow_html=True)
+        else:
+            rows = []
+            for record in app_tests:
+                success = record.get("last_success") or {}
+                failure = record.get("last_failure") or {}
+                rows.append({
+                    "test": esc(record["test_id"]),
+                    "script": esc(os.path.basename(record.get("script", "")) or "—"),
+                    "health": theme.pill({"passing": "success", "failing": "failed",
+                                          "healing": "warning"}.get(
+                                              test_registry.health(record), "warning")),
+                    "locators": len(record.get("locators_used", [])),
+                    "ok": esc(clock(success.get("at")) or "never"),
+                    "bad": esc(clock(failure.get("at")) or "never"),
+                    "runs": record.get("total_runs", 0),
+                    "heals": record.get("total_heals", 0),
+                })
+            st.markdown(
+                theme.table(rows, [
+                    ("test", "Test"), ("script", "Script"), ("health", "State"),
+                    ("locators", "Locators"), ("ok", "Last success"),
+                    ("bad", "Last failure"), ("runs", "Runs"), ("heals", "Heals"),
+                ], aligns={"test": "mono", "script": "mono", "locators": "num",
+                           "runs": "num", "heals": "num"}),
+                unsafe_allow_html=True,
+            )
+
+    # ---- Run history + export -------------------------------------------
+    st.markdown(theme.section("Run history",
+                              "One record per execution. Selecting a run in the sidebar "
+                              "filters every other tab to that execution."),
+                unsafe_allow_html=True)
+    if not runs:
+        st.markdown(theme.empty("No runs recorded for this scope yet."),
+                    unsafe_allow_html=True)
+    else:
+        rows = [{
+            "run": esc(r["run_id"]),
+            "app": esc(r.get("app_id", "")),
+            "test": esc(r.get("test_id", "")),
+            "result": theme.pill("success" if r.get("status") == "passed" else "failed"),
+            "heals": r.get("heal_count", 0),
+            "refusals": r.get("refusal_count", 0),
+            "duration": f"{r.get('duration_seconds', 0)}s",
+            "when": esc(clock(r.get("started_at"))),
+        } for r in runs[:ROW_LIMIT]]
+        st.markdown(
+            theme.table(rows, [
+                ("run", "Run"), ("app", "Application"), ("test", "Test"),
+                ("result", "Result"), ("heals", "Heals"), ("refusals", "Refusals"),
+                ("duration", "Duration"), ("when", "Started"),
+            ], aligns={"run": "mono", "heals": "num", "refusals": "num",
+                       "duration": "num"}),
+            unsafe_allow_html=True,
+        )
+
+        if selected_run_id:
+            record = run_context.load(selected_run_id)
+            if record:
+                st.markdown(theme.section("Export report",
+                                          "The selected run as a hand-over artefact."),
+                            unsafe_allow_html=True)
+                col1, col2, col3 = st.columns(3)
+                col1.download_button("Markdown report", reports.to_markdown(record),
+                                     file_name=f"{selected_run_id}.md",
+                                     mime="text/markdown", use_container_width=True)
+                col2.download_button("Heals (CSV)", reports.to_csv(record),
+                                     file_name=f"{selected_run_id}.csv",
+                                     mime="text/csv", use_container_width=True)
+                col3.download_button("Raw run (JSON)", reports.to_json(record),
+                                     file_name=f"{selected_run_id}.json",
+                                     mime="application/json", use_container_width=True)
+
+                patch = reports.patch_suggestions(record)
+                if patch:
+                    st.markdown("**Suggested test-script changes** — never applied "
+                                "automatically; copy them if you agree.")
+                    st.code(patch, language="diff")
+
+# --------------------------------------------------------------------------
+# Change impact — what the developer changed, and whether it threatens the suite
+# --------------------------------------------------------------------------
+with tab_drift:
+    st.markdown(
+        theme.section(
+            "Change impact analysis",
+            "Run python cli.py check --app <id> after a developer edits the "
+            "markup. It compares the live page against the recorded baseline "
+            "without running the suite, so a change that breaks nothing still "
+            "produces an answer instead of silence.",
+        ),
+        unsafe_allow_html=True,
+    )
+
+    drift_records = [
+        record for record in logs.get("drift", [])
+        if selected_app == ALL or record.get("app_id") == selected_app
+    ]
+    if not drift_records:
+        st.markdown(
+            theme.empty("No change-impact analysis recorded yet. "
+                        "Run: python cli.py check --app <id>"),
+            unsafe_allow_html=True,
+        )
+    else:
+        latest = drift_records[-1]
+        verdict = latest.get("verdict", "")
+        if verdict.startswith("AT RISK") or verdict.startswith("BREAKING"):
+            st.error(verdict)
+        elif verdict.startswith("RECOVERABLE"):
+            st.warning(verdict)
+        else:
+            st.success(verdict)
+
+        summary = latest.get("summary", {})
+        st.markdown(
+            theme.stat_row([
+                ("Unchanged", summary.get("INTACT", 0)),
+                ("Moved", summary.get("MOVED", 0)),
+                ("Changed", summary.get("CHANGED", 0)),
+                ("Ambiguous", summary.get("AMBIGUOUS", 0)),
+                ("Missing", summary.get("MISSING", 0)),
+                ("Added", summary.get("NEW", 0)),
+            ]),
+            unsafe_allow_html=True,
+        )
+
+        rows = [{
+            "time": esc(clock(record.get("timestamp"))),
+            "app": esc(record.get("app_id", "")),
+            "url": esc((record.get("url") or "")[:50]),
+            "affected": record.get("affected", 0),
+            "verdict": esc(record.get("verdict", "")[:70]),
+        } for record in newest_first(drift_records)]
+        st.markdown(
+            theme.table(rows, [
+                ("time", "Time"), ("app", "Application"), ("url", "Page"),
+                ("affected", "Affected locators"), ("verdict", "Verdict"),
+            ], aligns={"url": "mono", "affected": "num"}),
+            unsafe_allow_html=True,
+        )
 
 # --------------------------------------------------------------------------
 # Locator healing
 # --------------------------------------------------------------------------
 with tab_ui:
-    records = logs.get("ui_heals", [])
+    records = scoped("ui_heals")
+    st.caption(f"Showing: {scope_label}")
     st.markdown(
         theme.section(
             "Locator heals",
@@ -158,7 +421,7 @@ with tab_ui:
         successes = len(df[df["status"] == "success"])
         warnings = len(df[df["status"] == "warning"])
         failures = len([
-            a for a in logs.get("alerts", []) if a.get("source") == "UIHeuristicEngine"
+            a for a in scoped("alerts") if a.get("source") == "UIHeuristicEngine"
         ])
         rerouted = successes + warnings
         interruptions = rerouted + failures
@@ -177,16 +440,26 @@ with tab_ui:
         for record in newest_first(records):
             components = (record.get("details") or {}).get("component_scores", {}) \
                 if isinstance(record.get("details"), dict) else {}
-            # Four separate score columns pushed the table past the page width
-            # and told the reader less than the four numbers side by side.
+            # The engine renamed its score keys; accept both spellings so heals
+            # recorded before the rename still show their breakdown instead of
+            # four em-dashes.
             breakdown = " · ".join(
-                score(components.get(key)) for key in
-                ("R1_text_40", "R2_xpath_30", "R3_css_20", "R4_neighbors_10")
+                score(components.get(new, components.get(old)))
+                for new, old in (
+                    ("R1_inner_text_40", "R1_text_40"),
+                    ("R2_xpath_pattern_30", "R2_xpath_30"),
+                    ("R3_css_class_20", "R3_css_20"),
+                    ("R4_neighbors_10", "R4_neighbors_10"),
+                )
             )
+            repaired = record.get("repaired_value") or record.get("recovered_selector") or "—"
+            if record.get("repaired_by"):
+                repaired = f"{record['repaired_by']}={repaired}"
             rows.append({
                 "time": esc(clock(record.get("timestamp"))),
+                "test": esc(record.get("test_id") or "—"),
                 "broken": esc(record.get("broken_selector")),
-                "recovered": esc(record.get("recovered_selector")),
+                "repaired": esc(repaired),
                 "confidence": pct(record.get("confidence_score")),
                 "components": breakdown,
                 "status": theme.pill(record.get("status")),
@@ -195,13 +468,37 @@ with tab_ui:
         st.markdown(
             theme.table(
                 rows,
-                [("time", "Time"), ("broken", "Broken locator"),
-                 ("recovered", "Recovered element"), ("confidence", "Confidence"),
+                [("time", "Time"), ("test", "Test"), ("broken", "Broken locator"),
+                 ("repaired", "New runtime locator"), ("confidence", "Confidence"),
                  ("components", "R1 · R2 · R3 · R4"), ("status", "Outcome")],
-                aligns={"broken": "mono", "confidence": "num", "components": "num"},
+                aligns={"broken": "mono", "repaired": "mono", "confidence": "num",
+                        "components": "num"},
             ) + theme.table_note(min(ROW_LIMIT, len(records)), len(records), "heals"),
             unsafe_allow_html=True,
         )
+
+        st.markdown(theme.section("Why each locator was repaired",
+                                  "The rules that decided the match, and the change "
+                                  "recommended to the QA engineer."),
+                    unsafe_allow_html=True)
+        for record in newest_first(records)[:6]:
+            with st.expander(
+                f"{record.get('broken_selector', '?')}  →  "
+                f"{record.get('repaired_value', '?')}   "
+                f"({record.get('confidence_score', 0)}%)"
+            ):
+                st.markdown(f"**Reason:** {record.get('reason') or '—'}")
+                st.markdown(f"**Recommendation:** {record.get('recommendation') or '—'}")
+                margin = record.get("margin_over_second")
+                if margin is not None:
+                    st.markdown(f"**Margin over next-best candidate:** {margin}%")
+                if record.get("repaired_source"):
+                    st.caption(
+                        "Locator derived from the live element."
+                        if record["repaired_source"] == "live"
+                        else "Live element carries no identifying attribute; locator "
+                             "derived from the recorded baseline."
+                    )
 
         # ---- Per-heal detail: Reason for repair + QA recommendation (report §3.7) ----
         st.markdown(
@@ -557,7 +854,8 @@ with tab_infra:
 # Alerts
 # --------------------------------------------------------------------------
 with tab_alerts:
-    records = logs.get("alerts", [])
+    records = scoped("alerts")
+    st.caption(f"Showing: {scope_label}")
     st.markdown(
         theme.section(
             "Alerts",

@@ -9,6 +9,8 @@ import urllib.request
 import difflib
 from datetime import datetime
 import config
+import dom_features
+import run_context
 import store
 
 class UIHeuristicEngine:
@@ -35,13 +37,48 @@ class UIHeuristicEngine:
         return difflib.SequenceMatcher(None, str(value1).strip(), str(value2).strip()).ratio() * 100.0
 
     def calculate_xpath_depth_similarity(self, xpath1, xpath2):
-        """Compares structural tree layouts instead of looking for exact matching string tokens."""
+        """R2: how similar two elements' positions in the document tree are.
+
+        The comparison is STRUCTURAL, not positional-by-index. The previous
+        implementation zipped the two paths segment by segment and required
+        '/div[2]' to sit at the same offset as '/div[2]', which meant that
+        inserting a single wrapper <div> -- the most ordinary change a front-end
+        developer makes -- shifted every segment below it and collapsed the
+        score even though the element had not moved relative to its own parent.
+        A wrapper insertion took this rule from 100% to 60%.
+
+        Three signals are combined instead:
+
+          * Shape (55%). The index-free tag paths compared with difflib's
+            sequence matcher, which is insertion- and deletion-tolerant: an
+            extra <div> in the middle costs one segment rather than
+            invalidating everything after it.
+          * Ordinal position (25%). The fully indexed segments, compared the
+            same way. Stripping indices alone would make the first and the
+            third button in a row structurally identical, so sibling order is
+            still worth something -- it is exactly the evidence that separates
+            two similar candidates on the same page.
+          * Depth agreement (20%). How close the two elements sit in nesting
+            depth, so one buried far deeper than the fingerprint loses
+            confidence even when its ancestry reads the same.
+
+        Both sides are reduced by dom_features.relative_xpath, so the golden
+        fingerprint and the live candidate are always compared like-for-like.
+        """
         if not xpath1 or not xpath2:
             return 0.0
-        layers1 = xpath1.split("/")
-        layers2 = xpath2.split("/")
-        matches = sum(1 for l1, l2 in zip(layers1, layers2) if l1 == l2)
-        return (matches / max(len(layers1), len(layers2))) * 100.0
+
+        full1 = [s for s in str(xpath1).split("/") if s]
+        full2 = [s for s in str(xpath2).split("/") if s]
+        tags1 = [t for t in dom_features.relative_xpath(xpath1).split("/") if t]
+        tags2 = [t for t in dom_features.relative_xpath(xpath2).split("/") if t]
+        if not tags1 or not tags2:
+            return 0.0
+
+        shape = difflib.SequenceMatcher(None, tags1, tags2).ratio()
+        ordinal = difflib.SequenceMatcher(None, full1, full2).ratio()
+        depth = 1.0 - (abs(len(tags1) - len(tags2)) / max(len(tags1), len(tags2)))
+        return ((shape * 0.55) + (ordinal * 0.25) + (depth * 0.20)) * 100.0
 
     def calculate_neighbor_similarity(self, neighbors1, neighbors2):
         """R4: how similar the surrounding elements are.
@@ -71,6 +108,19 @@ class UIHeuristicEngine:
         raw = m.group(1) if m else str(broken_selector)
         return raw.lstrip("#.").strip()
 
+    @staticmethod
+    def _locator_key(broken_selector):
+        """Canonical "<by>::<value>" identity for a locator, or '' if unparsable.
+
+        automation_wrapper formats the failing lookup as "id='start-btn'" /
+        "css selector='.add-btn'" / "xpath='//button[1]'", which is the same
+        (by, value) pair Inline Learning recorded on the passing run.
+        """
+        m = re.match(r"^(.*?)='(.*)'$", str(broken_selector).strip(), re.DOTALL)
+        if not m:
+            return ""
+        return f"{m.group(1).strip()}::{m.group(2)}"
+
     def select_target_fingerprint(self, broken_selector, min_ratio=40.0):
         """Tie the broken locator to the fingerprint it was MEANT to find.
 
@@ -83,6 +133,20 @@ class UIHeuristicEngine:
         like By.CSS_SELECTOR("button.btn-primary") match the fingerprint captured
         from that exact locator during Learning Mode.
         """
+        # --- Exact identity first (preferred) -------------------------------
+        # Inline Learning records the locator the test script actually used, so
+        # a Day-2 failure of that same locator is an EXACT lookup, not a guess.
+        # This is what makes By.CSS_SELECTOR / By.XPATH / By.NAME / By.LINK_TEXT
+        # heal as reliably as By.ID: the key is the locator itself, so nothing
+        # depends on the broken string happening to resemble an element id.
+        # The similarity scan below remains as a fallback for baselines captured
+        # by the page scan, or for a locator never seen during learning.
+        exact_key = self._locator_key(broken_selector)
+        if exact_key:
+            for key, golden in self.fingerprints.items():
+                if golden.get("locator_key") == exact_key:
+                    return key, 100.0
+
         broken_value = self._extract_broken_value(broken_selector)
         if not broken_value:
             return None, 0.0
@@ -178,18 +242,38 @@ class UIHeuristicEngine:
                                    scores["r4"] * weights["r4"]) - tag_penalty
                 composite_score = min(100.0, max(0.0, composite_score))
 
+                # Identity gate. R2 and R4 describe WHERE an element sits, not
+                # WHICH element it is. When a tracked element is deleted, the
+                # neighbour that shifts into its place inherits its position and
+                # its surroundings, and can clear the safety gate on structural
+                # evidence alone -- a false heal, which is worse than no heal at
+                # all because it turns a visible failure into a silent one.
+                #
+                # So: if the fingerprint carries any identifying attribute at all
+                # (text, class, name, data-*, aria-label) and NONE of them match
+                # the candidate, we have not identified anything. Refuse.
+                # Attributes absent from the fingerprint are not held against the
+                # candidate -- that stays the job of weight normalisation above.
+                identity, identity_applicable = self._identity_evidence(golden, cand, r1, r3)
+                if identity_applicable and identity < self.IDENTITY_FLOOR:
+                    composite_score = 0.0
+
                 scored.append((composite_score, cand, {
                     "R1_inner_text_40": round(r1, 2),
                     "R2_xpath_pattern_30": round(r2, 2),
                     "R3_css_class_20": round(r3, 2),
                     "R4_neighbors_10": round(r4, 2),
-                }, weights))
+                }, weights, tag_penalty))
 
             if not scored:
                 continue
 
             scored.sort(key=lambda x: x[0], reverse=True)
-            top_score, top_cand, top_metrics, top_weights = scored[0]
+            # The penalty must come from the WINNING candidate. Reading the loop
+            # variable after the loop reported whatever the last candidate
+            # happened to score, which is why an unchanged <input> was explained
+            # as "Tag changed from <input> to <input>".
+            top_score, top_cand, top_metrics, top_weights, top_penalty = scored[0]
 
             if top_score > highest_score:
                 highest_score = top_score
@@ -201,9 +285,57 @@ class UIHeuristicEngine:
                 # Reason for repair (report §3.7): "A generated explanation stating
                 # which attributes matched, which changed, and which rules
                 # determined the outcome."
-                reason = self._build_reason(golden, top_cand, top_metrics, tag_penalty)
+                reason = self._build_reason(golden, top_cand, top_metrics, top_penalty)
 
         return best_match_id, highest_score, winning_metrics, best_candidate, reason, second_score
+
+    # An identifying attribute must reach this score for a candidate to count as
+    # the same element. Unrelated short strings score in the 20s under Gestalt
+    # matching ("Need help?" against "No ticket submitted" scored 27.6), so the
+    # floor sits above that band while still tolerating a genuine rename
+    # ("btn-submit" -> "btn-primary" scores 62).
+    IDENTITY_FLOOR = 40.0
+
+    # Attributes that identify an element rather than locate it. An exact match
+    # on any of these is conclusive on its own.
+    _IDENTITY_ATTRS = ("element_name", "aria_label", "placeholder", "input_type")
+
+    def _identity_evidence(self, golden, candidate, r1, r3):
+        """Best identifying-attribute agreement, and whether any was available.
+
+        Returns (score, applicable). `applicable` is False when the fingerprint
+        carries no identifying attribute at all -- a bare <div> with no text, no
+        class and no attributes -- in which case structural evidence is all that
+        exists and the gate does not apply.
+        """
+        best = 0.0
+        applicable = False
+
+        if str(golden.get("inner_text", "")).strip():
+            applicable = True
+            best = max(best, r1)
+        if str(golden.get("css_class", "")).strip():
+            applicable = True
+            best = max(best, r3)
+
+        for attr in self._IDENTITY_ATTRS:
+            golden_val = self._field(golden, attr)
+            if not golden_val:
+                continue
+            applicable = True
+            if golden_val == self._field(candidate, attr):
+                return 100.0, True
+
+        golden_data = golden.get("data_attrs") or {}
+        cand_data = candidate.get("data_attrs") or {}
+        for attr, golden_val in golden_data.items():
+            if not golden_val:
+                continue
+            applicable = True
+            if cand_data.get(attr) == golden_val:
+                return 100.0, True
+
+        return best, applicable
 
     def _build_reason(self, golden, candidate, metrics, tag_penalty):
         """Generate a human-readable explanation of the repair decision."""
@@ -265,75 +397,107 @@ class UIHeuristicEngine:
         8. css class      — styling, renamed during redesigns but present
         9. xpath          — structural, fragile but always available
         """
+        recovered = self.recover_locator(match_id, best_candidate)
+        return recovered.get("token", "") if recovered else ""
+
+    # Attribute preference order used to express a repaired locator, most stable
+    # first. Each entry is (field, by, template). `field` is read from the LIVE
+    # element before the golden fingerprint, because the golden value is by
+    # definition the stale one that just failed to resolve.
+    _RECOVERY_RANK = [
+        ("element_id",   "id",            "{v}"),
+        ("data-testid",  "css selector",  "[data-testid='{v}']"),
+        ("data-test",    "css selector",  "[data-test='{v}']"),
+        ("data-qa",      "css selector",  "[data-qa='{v}']"),
+        ("data-cy",      "css selector",  "[data-cy='{v}']"),
+        ("element_name", "name",          "{v}"),
+        ("aria_label",   "css selector",  "[aria-label='{v}']"),
+    ]
+
+    @staticmethod
+    def _field(source, field):
+        """Read `field` from a fingerprint or a live candidate, including the
+        nested data_attrs map, returning '' when absent."""
+        if not source:
+            return ""
+        if field.startswith("data-"):
+            return str((source.get("data_attrs") or {}).get(field, "") or "")
+        return str(source.get(field, "") or "")
+
+    def recover_locator(self, match_id, best_candidate=None):
+        """Locator Recovery Engine (report §3.4.3 Step 6).
+
+        Ranks the identifying attributes of the winning LIVE element by expected
+        stability and expresses the highest-ranked one as a real locator the QA
+        engineer can paste into the test script.
+
+        Returns {by, value, token, strategy, source} -- or {} when the match is
+        unknown. `source` records whether the value came from the live element
+        (the repaired locator) or from the golden fingerprint (a fallback used
+        only when the live element carries no identifying attribute at all).
+        """
         golden = self.fingerprints.get(match_id) if match_id else None
         if not golden:
-            return ""
+            return {}
 
-        # 1. Live id (preferred — reflects the CURRENT state after refactor)
-        live_id = (best_candidate or {}).get("id") or ""
-        if live_id:
-            return live_id
+        tag = self._field(best_candidate, "tag_name") or self._field(golden, "tag_name")
 
-        # 2. Golden element id
-        element_id = golden.get("element_id") or ""
-        if element_id:
-            return element_id
+        for field, by, template in self._RECOVERY_RANK:
+            for source_name, source in (("live", best_candidate), ("golden", golden)):
+                value = self._field(source, field)
+                if value:
+                    return {
+                        "by": by,
+                        "value": template.format(v=value),
+                        "token": value,
+                        "strategy": field,
+                        "source": source_name,
+                    }
 
-        # 3. name attribute
-        live_name = (best_candidate or {}).get("name") or ""
-        golden_name = golden.get("element_name") or ""
-        if live_name:
-            return live_name
-        if golden_name:
-            return golden_name
+        # Link text: only meaningful for anchors, where it is how a human
+        # identifies the element.
+        if tag == "a":
+            for source_name, source in (("live", best_candidate), ("golden", golden)):
+                text = self._field(source, "inner_text")
+                if text:
+                    return {
+                        "by": "link text", "value": text, "token": text,
+                        "strategy": "link_text", "source": source_name,
+                    }
 
-        # 4-6. data-* attributes
-        for attr in ("data-testid", "data-test", "data-qa"):
-            live_val = (best_candidate or {}).get(attr.replace("-", "_"), "")
-            if not live_val:
-                live_val = (best_candidate or {}).get("dataset", "")
-                if isinstance(live_val, str) and attr in live_val:
-                    import json as _json
-                    try:
-                        ds = _json.loads(live_val)
-                        live_val = ds.get(attr, "")
-                    except Exception:
-                        live_val = ""
-            golden_attrs = golden.get("data_attrs", {})
-            if live_val:
-                return live_val
-            if golden_attrs.get(attr):
-                return golden_attrs[attr]
+        # CSS class: survives id renames but is itself a redesign casualty.
+        for source_name, source in (("live", best_candidate), ("golden", golden)):
+            css = self._field(source, "css_class")
+            if css and tag:
+                selector = tag + "." + ".".join(css.split())
+                return {
+                    "by": "css selector", "value": selector, "token": selector,
+                    "strategy": "css_class", "source": source_name,
+                }
 
-        # 6. aria-label
-        live_aria = (best_candidate or {}).get("aria_label") or ""
-        golden_aria = golden.get("aria_label") or ""
-        if live_aria:
-            return live_aria
-        if golden_aria:
-            return golden_aria
+        # XPath: always available, least stable. Prefer the live path -- it is
+        # where the element is NOW.
+        xpath = self._field(best_candidate, "xpath") or self._field(golden, "xpath_pattern")
+        if xpath:
+            return {
+                "by": "xpath", "value": xpath, "token": xpath,
+                "strategy": "xpath",
+                "source": "live" if self._field(best_candidate, "xpath") else "golden",
+            }
 
-        # 7. text content
-        live_text = (best_candidate or {}).get("inner_text") or ""
-        golden_text = golden.get("inner_text") or ""
-        tag = (best_candidate or {}).get("tag_name") or golden.get("tag_name") or ""
-        if live_text and tag:
-            return f"{tag}[text='{live_text}']"
-        if golden_text and tag:
-            return f"{tag}[text='{golden_text}']"
+        return {}
 
-        # 8. css class
-        live_css = (best_candidate or {}).get("css_class") or ""
-        golden_css = golden.get("css_class") or ""
-        if live_css and tag:
-            primary = live_css.split()[0]
-            return f"{tag}.{primary}"
-        if golden_css and tag:
-            primary = golden_css.split()[0]
-            return f"{tag}.{primary}"
-
-        # 9. locator value from fingerprint
-        return str(golden.get("locator_value", "")).lstrip("#")
+    # Selenium By constant names, for rendering a copy-paste recommendation.
+    _BY_CONSTANTS = {
+        "id": "By.ID",
+        "name": "By.NAME",
+        "css selector": "By.CSS_SELECTOR",
+        "xpath": "By.XPATH",
+        "link text": "By.LINK_TEXT",
+        "partial link text": "By.PARTIAL_LINK_TEXT",
+        "tag name": "By.TAG_NAME",
+        "class name": "By.CLASS_NAME",
+    }
 
     def _broken_source_token(self, broken_selector):
         """Bare identifier the QA script actually used (e.g. clearBtn), so a
@@ -359,7 +523,7 @@ class UIHeuristicEngine:
         locators = []
         
         # Strategy 1: ID (most stable) — prefer live candidate's id
-        live_id = (best_candidate or {}).get("id") or ""
+        live_id = self._field(best_candidate, "element_id")
         element_id = golden.get("element_id") or ""
         use_id = live_id or element_id
         if use_id:
@@ -372,7 +536,7 @@ class UIHeuristicEngine:
             })
         
         # Strategy 2: name attribute
-        live_name = (best_candidate or {}).get("name") or ""
+        live_name = self._field(best_candidate, "element_name")
         golden_name = golden.get("element_name") or ""
         use_name = live_name or golden_name
         if use_name:
@@ -443,13 +607,19 @@ class UIHeuristicEngine:
         derived from the LIVE candidate's current id (when present) so a renamed
         element records its NEW id rather than the stale baseline id. Best-effort:
         returns the healed locator string, or '' on no-op/failure (never raises)."""
-        token = self.canonical_locator(match_id, best_candidate)
+        recovered = self.recover_locator(match_id, best_candidate)
+        token = recovered.get("token", "") if recovered else ""
         if not token or match_id not in self.fingerprints:
             return ""
-        healed_value = f"#{token}"
+        # Express the repaired locator in the strategy the recovery engine chose.
+        # Hardcoding a '#'-prefixed css selector was wrong for every element
+        # recovered by name, data attribute, aria-label, link text or xpath.
+        healed_value = recovered["value"]
         try:
             self.fingerprints[match_id]["healed_locator_value"] = healed_value
-            self.fingerprints[match_id]["healed_locator_by"] = "css selector"
+            self.fingerprints[match_id]["healed_locator_by"] = recovered["by"]
+            self.fingerprints[match_id]["healed_locator_strategy"] = recovered["strategy"]
+            self.fingerprints[match_id]["healed_locator_source"] = recovered["source"]
             self.fingerprints[match_id]["healed_source_token"] = token
             tmp = self.fingerprint_path + ".tmp"
             with open(tmp, "w", encoding="utf-8") as f:
@@ -497,38 +667,45 @@ class UIHeuristicEngine:
         # Generate QA recommendation (report §3.7)
         recommendation = self._generate_recommendation(match_id, best_candidate, score, policy)
 
-        recovered_val = "unknown"
-        if match_id and match_id in self.fingerprints:
-            golden_el = self.fingerprints[match_id]
-            css = golden_el.get("css_class", "")
-            classes = css.replace(" ", ".") if css else ""
-            recovered_val = f"{golden_el['tag_name']}.{classes}" if classes else golden_el['tag_name']
+        # The repaired locator: a real By/value pair derived from the winning
+        # LIVE element, not a descriptor rebuilt from the stale baseline. This is
+        # what the dashboard shows as "New Runtime Locator" and what the QA
+        # recommendation tells the engineer to paste into the script.
+        recovered = self.recover_locator(match_id, best_candidate)
+        recovered_val = recovered.get("value", "unknown") if recovered else "unknown"
 
         if status == "failed":
-            store.append("alerts", {
+            refusal = {
                 "timestamp": timestamp,
+                **run_context.stamp(),
                 "severity": "critical",
                 "message": (
                     f"Recovery declined for {broken_selector}: best match scored "
                     f"{score:.1f}%, below the {config.CONFIDENCE_THRESHOLD_LOW:.0f}% "
                     f"safety gate. No element was clicked."
                 ),
+                "broken_selector": broken_selector,
+                "confidence_score": round(score, 2),
                 "source": "UIHeuristicEngine"
-            })
+            }
+            store.append("alerts", refusal)
+            run_context.note_refusal(refusal)
         else:
             healed_locator = self.update_metadata_locator(match_id, best_candidate)
 
             old_token = self._broken_source_token(broken_selector)
             new_token = self.canonical_locator(match_id, best_candidate)
 
-            if healed_locator:
-                recovered_val = healed_locator
-
             heal_entry = {
                 "timestamp": timestamp,
+                **run_context.stamp(),
                 "broken_selector": broken_selector,
                 "recovered_selector": recovered_val,
                 "healed_locator": healed_locator,
+                "repaired_by": recovered.get("by", "") if recovered else "",
+                "repaired_value": recovered.get("value", "") if recovered else "",
+                "repaired_strategy": recovered.get("strategy", "") if recovered else "",
+                "repaired_source": recovered.get("source", "") if recovered else "",
                 "confidence_score": round(score, 2),
                 "policy": policy,
                 "status": status,
@@ -555,17 +732,37 @@ class UIHeuristicEngine:
                 heal_entry["status"] = "pending_approval"
             
             store.append("ui_heals", heal_entry)
+            run_context.note_heal(heal_entry)
 
         return lifecycle, recovered_val, match_id
 
     def _generate_recommendation(self, match_id, best_candidate, score, policy):
-        """Generate a QA recommendation (report §3.7)."""
+        """Generate a QA recommendation (report §3.7).
+
+        The useful recommendation is the concrete edit, not the advice to make
+        one, so the repaired locator is rendered as the exact Selenium tuple the
+        engineer can paste in place of the one that failed.
+        """
         golden = self.fingerprints.get(match_id) if match_id else None
         if not golden:
             return "Review the healed locator manually."
 
         recs = []
-        if policy == "AUTOMATIC HEAL":
+        recovered = self.recover_locator(match_id, best_candidate)
+        if recovered:
+            by_const = self._BY_CONSTANTS.get(recovered["by"], "By.CSS_SELECTOR")
+            replacement = f'({by_const}, "{recovered["value"]}")'
+            if policy == "AUTOMATIC HEAL":
+                recs.append(f"Update the test script to use {replacement}.")
+            else:
+                recs.append(f"Review before applying: {replacement}.")
+            if recovered["source"] == "golden":
+                recs.append(
+                    "Note: the live element carries no identifying attribute, so this "
+                    "locator is derived from the recorded baseline rather than the "
+                    "current page."
+                )
+        elif policy == "AUTOMATIC HEAL":
             recs.append("Update the test script to use the repaired locator.")
         elif policy == "CAUTIOUS HEAL":
             recs.append("Review this heal in the dashboard before accepting it.")

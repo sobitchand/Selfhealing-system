@@ -1,1 +1,184 @@
-[]
+[
+  {
+    "timestamp": "2026-07-31T10:37:53.365166+00:00",
+    "heal_id": "heal_20260731_103753_0",
+    "script": "test_shop.py",
+    "confidence": 90.33,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-07-31T10:37:53.621701+00:00",
+    "heal_id": "heal_20260731_103753_1",
+    "script": "test_shop.py",
+    "confidence": 91.79,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-07-31T10:43:13.779388+00:00",
+    "heal_id": "heal_20260731_104313_2",
+    "script": "test_shop.py",
+    "confidence": 90.33,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-07-31T10:43:14.060966+00:00",
+    "heal_id": "heal_20260731_104314_3",
+    "script": "test_shop.py",
+    "confidence": 91.79,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-07-31T10:51:14.486588+00:00",
+    "heal_id": "heal_20260731_105114_4",
+    "script": "test_shop.py",
+    "confidence": 100.0,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-07-31T10:51:14.748219+00:00",
+    "heal_id": "heal_20260731_105114_5",
+    "script": "test_shop.py",
+    "confidence": 95.65,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-07-31T10:54:39.717872+00:00",
+    "heal_id": "heal_20260731_105439_6",
+    "script": "test_support.py",
+    "confidence": 100.0,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-07-31T10:54:40.274027+00:00",
+    "heal_id": "heal_20260731_105440_7",
+    "script": "test_support.py",
+    "confidence": 92.41,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-07-31T10:54:40.370624+00:00",
+    "heal_id": "heal_20260731_105440_8",
+    "script": "test_support.py",
+    "confidence": 98.85,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-07-31T10:54:59.852295+00:00",
+    "heal_id": "heal_20260731_105459_9",
+    "script": "test_support.py",
+    "confidence": 100.0,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-07-31T10:55:00.297669+00:00",
+    "heal_id": "heal_20260731_105500_10",
+    "script": "test_support.py",
+    "confidence": 24.73,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-07-31T10:55:00.343285+00:00",
+    "heal_id": "heal_20260731_105500_11",
+    "script": "test_support.py",
+    "confidence": 92.41,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-07-31T10:55:00.436565+00:00",
+    "heal_id": "heal_20260731_105500_12",
+    "script": "test_support.py",
+    "confidence": 95.3,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-07-31T10:56:51.400546+00:00",
+    "heal_id": "heal_20260731_105651_13",
+    "script": "test_support.py",
+    "confidence": 100.0,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-07-31T10:57:41.598413+00:00",
+    "heal_id": "heal_20260731_105741_14",
+    "script": "test_support.py",
+    "confidence": 100.0,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-07-31T10:57:42.188615+00:00",
+    "heal_id": "heal_20260731_105742_15",
+    "script": "test_support.py",
+    "confidence": 92.41,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-07-31T10:57:42.298901+00:00",
+    "heal_id": "heal_20260731_105742_16",
+    "script": "test_support.py",
+    "confidence": 98.85,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-07-31T10:57:45.925219+00:00",
+    "heal_id": "heal_20260731_105745_17",
+    "script": "test_shop.py",
+    "confidence": 100.0,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-07-31T10:57:46.207438+00:00",
+    "heal_id": "heal_20260731_105746_18",
+    "script": "test_shop.py",
+    "confidence": 95.65,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-07-31T11:09:34.396693+00:00",
+    "heal_id": "heal_20260731_110934_19",
+    "script": "test_support.py",
+    "confidence": 100.0,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-07-31T11:09:34.967960+00:00",
+    "heal_id": "heal_20260731_110934_20",
+    "script": "test_support.py",
+    "confidence": 92.41,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-07-31T11:10:35.187244+00:00",
+    "heal_id": "heal_20260731_111035_21",
+    "script": "test_support.py",
+    "confidence": 100.0,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-07-31T11:10:35.734463+00:00",
+    "heal_id": "heal_20260731_111035_22",
+    "script": "test_support.py",
+    "confidence": 92.41,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-07-31T11:26:33.576454+00:00",
+    "heal_id": "heal_20260731_112633_23",
+    "script": "test_support.py",
+    "confidence": 100.0,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-07-31T11:26:34.119625+00:00",
+    "heal_id": "heal_20260731_112634_24",
+    "script": "test_support.py",
+    "confidence": 92.41,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-07-31T11:26:34.219045+00:00",
+    "heal_id": "heal_20260731_112634_25",
+    "script": "test_support.py",
+    "confidence": 98.85,
+    "status": "queued"
+  }
+]

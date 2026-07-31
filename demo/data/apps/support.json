@@ -1,0 +1,11 @@
+{
+  "app_id": "support",
+  "created_at": "2026-07-31T10:54:21.204095+00:00",
+  "baseline_recorded_at": "2026-07-31T11:26:36.417138+00:00",
+  "app_name": "Support Desk",
+  "base_url": "file:///D:/Selfhealing-system/demo/examples/support/index.html",
+  "source_path": "examples/support/index.html",
+  "build_version": "",
+  "fingerprint_path": "D:\\Selfhealing-system\\demo\\data\\fingerprints\\support_fingerprints.json",
+  "updated_at": "2026-07-31T10:54:21.204123+00:00"
+}

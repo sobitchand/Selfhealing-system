@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Support Desk</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; max-width: 520px; }
+    label { display: block; margin-top: .75rem; font-weight: 600; }
+    input, select, textarea { width: 100%; padding: .4rem; margin-top: .25rem; }
+    .btn { margin-top: 1rem; padding: .5rem 1.2rem; border: 0; border-radius: 6px; cursor: pointer; }
+    .btn-submit { background: #16a34a; color: #fff; }
+    #status { margin-top: 1rem; font-weight: 700; color: #16a34a; }
+  </style>
+</head>
+<body>
+  <h1>Support Desk</h1>
+
+  <form id="ticket-form">
+    <label for="full-name">Your name</label>
+    <input id="full-name" name="fullname" type="text">
+
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email">
+
+    <label for="priority">Priority</label>
+    <select id="priority" name="priority">
+      <option value="low">Low</option>
+      <option value="high">High</option>
+    </select>
+
+    <label for="message">Describe the problem</label>
+    <textarea id="message" name="message" rows="3"></textarea>
+
+    <button id="submit-ticket" class="btn btn-submit" data-testid="submit-ticket" type="button">
+      Submit ticket
+    </button>
+  </form>
+
+  <div id="status">No ticket submitted</div>
+  <a id="help-link" href="#help">Need help?</a>
+
+  <script>
+    document.getElementById('submit-ticket').addEventListener('click', function () {
+      var name = document.getElementById('full-name').value;
+      var priority = document.getElementById('priority').value;
+      document.getElementById('status').textContent =
+        'Ticket created for ' + name + ' (' + priority + ')';
+    });
+  </script>
+</body>
+</html>
