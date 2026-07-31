@@ -389,20 +389,8 @@ with tab_approval:
                 with col2:
                     st.markdown("<br>", unsafe_allow_html=True)
                     
-                    # Check if git integration is enabled
-                    git_enabled = current_config.get("git_integration_enabled", False)
-                    
-                    if git_enabled:
-                        create_pr = st.checkbox(
-                            "Create PR",
-                            key=f"create_pr_{heal['heal_id']}",
-                            help="Create a git branch and PR for this heal"
-                        )
-                    else:
-                        create_pr = False
-                    
                     if st.button("✅ Approve", key=f"approve_{heal['heal_id']}", use_container_width=True):
-                        success, msg = workflow.approve_heal(heal['heal_id'], create_pr=create_pr)
+                        success, msg = workflow.approve_heal(heal['heal_id'], create_pr=False)
                         if success:
                             st.success(msg)
                             st.rerun()
