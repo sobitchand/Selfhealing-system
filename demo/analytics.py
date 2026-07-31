@@ -194,7 +194,7 @@ class LocatorStabilityAnalyzer:
     def analyze_fingerprints(self, fingerprint_path=None):
         """Analyze all fingerprints and return stability scores."""
         if fingerprint_path is None:
-            fingerprint_path = config.POMODORO_FINGERPRINTS_PATH
+            fingerprint_path = config.ACTIVE_FINGERPRINT_PATH
         
         try:
             with open(fingerprint_path, "r") as f:

@@ -263,6 +263,11 @@ table.tbl td.mono {{
 [data-testid="stSidebar"] {{
     background: {PANEL};
     border-right: 1px solid {RULE};
+    min-width: 300px;
+    width: 300px !important;
+}}
+[data-testid="stSidebarContent"] {{
+    padding: 1.5rem 1rem;
 }}
 [data-testid="stSidebar"] .sb-title {{
     font-size: .8rem;
@@ -314,6 +319,14 @@ table.tbl td.mono {{
 footer {{
     display: none !important;
     visibility: hidden !important;
+}}
+
+/* ---- config action cards ---- */
+.config-actions {{
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 1rem 0 1.5rem;
 }}
 </style>
 """

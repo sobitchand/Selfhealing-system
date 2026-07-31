@@ -1,203 +1,191 @@
 """
-The whole demonstration, in one command.
+One-command demo runner for the comprehensive TaskFlow app.
 
-    python demo.py
+    python demo.py [--headed] [--dashboard] [--break MODE]
 
-Starts the application under test, then runs the SAME unmodified QA suite twice
-against the SAME refactored build:
+Starts the target app, runs the test suite against the clean version to learn
+fingerprints, then runs against the broken version to demonstrate healing.
 
-    1. baseline  -- stock Selenium. The locators have rotted; the suite fails.
-    2. healed    -- identical suite, with the rule-based self-healing layer
-                    installed via `selfheal.install()`. It recovers.
-
-The test files, the page objects and the application are byte-identical between
-the two runs. The only variable is whether the healing layer is installed, which
-is what makes the result evidence rather than a demo.
-
-Options:
-    --headed      watch Chrome do it
-    --dashboard   also launch the Streamlit dashboard
-    --break MODE  fault to inject (default: refactor)
+Flags:
+  --headed      Run Chrome visibly
+  --dashboard   Launch Streamlit dashboard alongside
+  --break MODE  Fault to inject: refactor (default), css, id, attr, all
 """
 
-import argparse
-import json
 import os
-import socket
-import subprocess
 import sys
 import time
-import urllib.error
-import urllib.request
+import subprocess
+import threading
 
-import config  # noqa: F401  (forces UTF-8 stdout on Windows consoles)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, BASE_DIR)
 
-DEMO_DIR = os.path.dirname(os.path.abspath(__file__))
-RUNNER = os.path.join(DEMO_DIR, "tests", "runner.py")
-APP = os.path.join(DEMO_DIR, "demo_target_app.py")
-RESULT_MARKER = "##SELFHEAL_RESULT##"
+import config
+import selfheal
+import automation_wrapper
+import learning_mode
+from fingerprint_manager import FingerprintManager
 
-# A marker only our page carries, used to tell our application apart from
-# whatever else might be listening on the port.
-APP_FINGERPRINT = "Pomodoro 3D Focus Timer"
-PORT_CANDIDATES = [8000, 8010, 8020, 8030]
-
-RULE = "─" * 78
-
-
-def port_open(port, host="127.0.0.1"):
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.settimeout(0.4)
-        return s.connect_ex((host, port)) == 0
+PORT = int(os.environ.get("TARGET_APP_PORT", "8000"))
+FINGERPRINT_PATH = os.path.join(config.DATA_DIR, "fingerprints", "web_demo_fingerprints.json")
+TEST_SCRIPT = os.path.join(BASE_DIR, "test_comprehensive.py")
 
 
-def is_our_app(port):
-    """True only if the thing on `port` is the Pomodoro application. Checking
-    that the port is merely OPEN is not enough -- an unrelated dev server
-    squatting on 8000 would silently become the application under test, and the
-    suite would fail for reasons that have nothing to do with healing."""
-    try:
-        with urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=3) as response:
-            return APP_FINGERPRINT in response.read(8192).decode("utf-8", "replace")
-    except (urllib.error.URLError, OSError, ValueError):
-        return False
+def find_chromedriver():
+    import glob
+    paths = glob.glob(os.path.expanduser(
+        "~/.wdm/drivers/chromedriver/*/*/chromedriver-win64/chromedriver.exe"
+    ))
+    if paths:
+        return paths[-1]
+    from webdriver_manager.chrome import ChromeDriverManager
+    return ChromeDriverManager().install()
 
 
-def wait_for_app(port, timeout=25):
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        if is_our_app(port):
-            return True
-        time.sleep(0.3)
-    return False
+def start_target_app():
+    app_script = os.path.join(BASE_DIR, "demo_target_app.py")
+    proc = subprocess.Popen(
+        [sys.executable, app_script, str(PORT)],
+        cwd=BASE_DIR,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    # Wait for app to be ready
+    for _ in range(20):
+        time.sleep(0.5)
+        try:
+            import urllib.request
+            req = urllib.request.urlopen(f"http://127.0.0.1:{PORT}/", timeout=2)
+            if req.status == 200:
+                return proc
+        except Exception:
+            pass
+    print("Warning: Target app may not be ready yet")
+    return proc
 
 
-def run_suite(label, extra_args, headed):
-    """Run the QA suite in a clean subprocess and return its result payload."""
-    cmd = [sys.executable, RUNNER, "--quiet"] + extra_args
-    if headed:
-        cmd.append("--headed")
-    print(f"   running {label} suite...", flush=True)
-    proc = subprocess.run(cmd, cwd=DEMO_DIR, capture_output=True, text=True)
-    for line in proc.stdout.splitlines():
-        if line.startswith(RESULT_MARKER):
-            return json.loads(line[len(RESULT_MARKER):])
-    print(f"❌ {label} run produced no result.\n{proc.stdout[-2000:]}\n{proc.stderr[-2000:]}")
-    sys.exit(1)
+def start_dashboard():
+    dash_script = os.path.join(BASE_DIR, "dashboard.py")
+    proc = subprocess.Popen(
+        [sys.executable, "-m", "streamlit", "run", dash_script,
+         "--server.port", "8501", "--server.headless", "true"],
+        cwd=BASE_DIR,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    time.sleep(3)
+    print("Dashboard running at http://localhost:8501")
+    return proc
 
 
-def render(title, payload, show_heals):
-    print(f"\n{RULE}\n  {title}\n{RULE}")
-    for test in payload["tests"]:
-        mark = "✅ PASS" if test["passed"] else "❌ FAIL"
-        print(f"  {mark}  {test['name']:<45} {test['seconds']:>5.2f}s")
-        if not test["passed"]:
-            print(f"           └─ {test['error']}")
-        if show_heals:
-            if test["heals"]:
-                for heal in test["heals"]:
-                    target = f"<{heal['resolved_tag']}> \"{heal['resolved_text']}\"" \
-                        if heal.get("resolved_tag") else heal["resolved_to"]
-                    print(f"           └─ healed {heal['locator']} → {target}"
-                          f"   {heal['confidence']}% · {heal['policy']} · {heal['ms']}ms")
-            elif test["passed"]:
-                print("           └─ no heal needed")
-    passed, total = payload["passed"], payload["total"]
-    print(f"{RULE}\n  RESULT: {passed}/{total} passed")
+def make_driver(headless=True):
+    from selenium import webdriver
+    from selenium.webdriver.chrome.service import Service
+    options = webdriver.ChromeOptions()
+    if headless:
+        options.add_argument("--headless=new")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    driver_path = find_chromedriver()
+    return webdriver.Chrome(service=Service(driver_path), options=options)
 
 
 def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--headed", action="store_true", help="run Chrome visibly")
-    ap.add_argument("--dashboard", action="store_true", help="launch the Streamlit dashboard too")
-    ap.add_argument("--break", dest="break_mode", default="refactor",
-                    help="fault to inject: refactor (default) | css | id | attr | all")
-    args = ap.parse_args()
+    headed = "--headed" in sys.argv
+    with_dashboard = "--dashboard" in sys.argv
+    headless = not headed
 
-    spawned = []
+    # Configure system
+    config.ACTIVE_FINGERPRINT_PATH = FINGERPRINT_PATH
+    config.POMODORO_FINGERPRINTS_PATH = FINGERPRINT_PATH
+    config.SOURCE_HEAL_ENABLED = True
+    config.SOURCE_HEAL_TARGETS = [TEST_SCRIPT]
 
-    print(f"\n{RULE}\n  SELF-HEALING QA LAYER — baseline vs healed\n{RULE}")
+    print("=" * 60)
+    print("SELF-HEALING SYSTEM DEMO")
+    print("=" * 60)
 
-    # The three-strike loop guard persists to disk on purpose, so it survives
-    # across runs. That means a previous BAD run (wrong app on the port, target
-    # down) can leave a locator locked and silently sabotage the demo. Clear it.
-    heal_state = os.path.join(DEMO_DIR, "data", "heal_state.json")
-    if os.path.exists(heal_state):
-        os.remove(heal_state)
-        print("   cleared the loop-guard state from previous runs")
+    # Start target app
+    print("\n[1/5] Starting target application...")
+    app_proc = start_target_app()
+    print(f"  Target app running on port {PORT}")
 
-    # ---- application under test -------------------------------------------
-    port = next((p for p in PORT_CANDIDATES if is_our_app(p)), None)
-    if port:
-        print(f"   application under test: already running on :{port}")
-    else:
-        free = next((p for p in PORT_CANDIDATES if not port_open(p)), None)
-        if free is None:
-            print(f"❌ every candidate port is taken by something else: {PORT_CANDIDATES}")
-            sys.exit(1)
-        if free != PORT_CANDIDATES[0]:
-            print(f"   :{PORT_CANDIDATES[0]} is in use by another application; "
-                  f"using :{free} instead")
-        print(f"   starting application under test on :{free} ...")
-        spawned.append(subprocess.Popen(
-            [sys.executable, APP, str(free)], cwd=DEMO_DIR,
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        ))
-        if not wait_for_app(free):
-            print(f"❌ target application did not come up on :{free}")
-            sys.exit(1)
-        port = free
+    dash_proc = None
+    if with_dashboard:
+        print("\n[2/5] Starting dashboard...")
+        dash_proc = start_dashboard()
 
-    base_url = f"http://127.0.0.1:{port}"
-    broken_url = f"{base_url}/?break={args.break_mode}"
-
-    if args.dashboard and not port_open(8501):
-        print("   starting dashboard on :8501 ...")
-        spawned.append(subprocess.Popen(
-            [sys.executable, "-m", "streamlit", "run", "dashboard.py",
-             "--server.headless", "true"],
-            cwd=DEMO_DIR, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        ))
+    driver = make_driver(headless=headless)
 
     try:
-        print(f"\n   A developer refactored the app (mode: {args.break_mode}).")
-        print("   Ids, classes and data attributes were renamed CONSISTENTLY, so the")
-        print("   application still works perfectly for a human user. Only the QA")
-        print("   suite's recorded locators have rotted.")
-        print(f"   Application under test: {broken_url}\n")
+        # Phase 1: Learn from clean version
+        print(f"\n[{('2' if with_dashboard else '1')}/5] Learning fingerprints from clean app...")
+        clean_url = f"http://127.0.0.1:{PORT}/"
+        driver.get(clean_url)
+        time.sleep(2)
 
-        baseline = run_suite("baseline", ["--url", broken_url], args.headed)
-        healed = run_suite("healed", [
-            "--heal", "--url", broken_url,
-            "--baseline-url", base_url, "--relearn",
-        ], args.headed)
+        with automation_wrapper.suppressed():
+            manager = FingerprintManager(driver, fingerprint_path=FINGERPRINT_PATH)
+            count = manager.scan_interactive()
+        print(f"  Captured {count} golden fingerprints")
 
-        render("1. BASELINE — stock Selenium, no healing", baseline, show_heals=False)
-        render("2. HEALED — identical suite, `selfheal.install()` added", healed, show_heals=True)
+        # Phase 2: Run baseline test (should pass)
+        print(f"\n[{('3' if with_dashboard else '2')}/5] Running baseline test (clean app)...")
+        from test_comprehensive import run_tests
+        passed1, failed1, total1 = run_tests(driver, url=clean_url)
+        print(f"  Baseline: {passed1}/{total1} passed")
 
-        all_heals = [h for t in healed["tests"] for h in t["heals"]]
-        heal_count = len(all_heals)
-        recovered = healed["passed"] - baseline["passed"]
-        avg_ms = round(sum(h["ms"] for h in all_heals) / heal_count, 1) if heal_count else 0.0
-        baseline_secs = sum(t["seconds"] for t in baseline["tests"])
-        healed_secs = sum(t["seconds"] for t in healed["tests"])
-        print(f"\n{RULE}\n  SUMMARY\n{RULE}")
-        print(f"  Baseline .................. {baseline['passed']}/{baseline['total']} passed")
-        print(f"  With self-healing layer ... {healed['passed']}/{healed['total']} passed")
-        print(f"  Tests recovered ........... {recovered}")
-        print(f"  Locator heals performed ... {heal_count}  (mean {avg_ms}ms each)")
-        print(f"  Suite wall-clock .......... {baseline_secs:.1f}s → {healed_secs:.1f}s "
-              f"(broken locators stop burning the wait timeout)")
-        print(f"  Test code changed ......... 0 lines")
-        print(f"{RULE}")
-        print("  Every heal above is logged to the dashboard "
-              "(UI Heuristic Healing tab).")
-        if not args.dashboard:
-            print("  Re-run with --dashboard to bring it up alongside.")
-        print()
+        # Phase 3: Run against broken version WITHOUT healing
+        print(f"\n[{('4' if with_dashboard else '3')}/5] Running test against BROKEN app (no healing)...")
+        selfheal.uninstall()
+        broken_url = f"http://127.0.0.1:{PORT}/?break=refactor"
+        passed2, failed2, total2 = run_tests(driver, url=broken_url)
+        print(f"  Without healing: {passed2}/{total2} passed ({failed2} failures)")
+
+        # Phase 4: Run against broken version WITH healing
+        print(f"\n[{('5' if with_dashboard else '4')}/5] Running test against BROKEN app (with self-healing)...")
+        selfheal.install(fingerprints=FINGERPRINT_PATH)
+        passed3, failed3, total3 = run_tests(driver, url=broken_url)
+        print(f"  With self-healing: {passed3}/{total3} passed")
+
+        # Summary
+        stats = selfheal.session_stats()
+        heals = selfheal.session_heals()
+
+        print(f"\n{'='*60}")
+        print("DEMO SUMMARY")
+        print(f"{'='*60}")
+        print(f"  Baseline (clean app) ......... {passed1}/{total1} passed")
+        print(f"  Without self-healing (broken)  {passed2}/{total2} passed")
+        print(f"  With self-healing (broken) .... {passed3}/{total3} passed")
+        print(f"  Tests recovered ............... {passed3 - passed2}")
+        print(f"  Locator heals performed ....... {stats['heals']}")
+
+        if heals:
+            print(f"\n  Healed locators:")
+            for h in heals:
+                print(f"    {h['locator']} -> {h['resolved_to']} ({h['confidence']:.1f}%)")
+
+        print(f"\n  Dashboard: http://localhost:8501")
+        print(f"{'='*60}")
+
+        if with_dashboard:
+            print("\nDashboard is running. Press Ctrl+C to stop everything.")
+            try:
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                pass
+
     finally:
-        for proc in spawned:
-            proc.terminate()
+        selfheal.uninstall()
+        driver.quit()
+        app_proc.terminate()
+        app_proc.wait()
+        if dash_proc:
+            dash_proc.terminate()
+            dash_proc.wait()
 
 
 if __name__ == "__main__":
