@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple DOM Web Application</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .app-container {
+            background: #ffffff;
+            padding: 20px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 350px;
+        }
+        h2 {
+            margin-top: 0;
+            color: #333;
+            text-align: center;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 8px 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f9f9f9;
+            padding: 8px 10px;
+            margin-bottom: 8px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+        }
+        li button {
+            background-color: #dc3545;
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+        li button:hover {
+            background-color: #bd2130;
+        }
+        .clear-btn {
+            width: 100%;
+            background-color: #6c757d;
+            margin-top: 10px;
+        }
+        .clear-btn:hover {
+            background-color: #5a6268;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <h2>Dynamic Task List</h2>
+        
+        <!-- Input Form -->
+        <div class="input-group">
+            <input type="text" id="itemInput" placeholder="Enter a new task...">
+            <button id="addBtn">Add</button>
+        </div>
+
+        <!-- DOM List Container -->
+        <ul id="itemList"></ul>
+
+        <!-- Clear All Button -->
+        <button id="clearBtn" class="clear-btn">Clear All</button>
+    </div>
+
+    <script>
+        // 1. Select DOM elements
+        const itemInput = document.getElementById('itemInput');
+        const addBtn = document.getElementById('addBtn');
+        const itemList = document.getElementById('itemList');
+        const clearBtn = document.getElementById('clrBtn');
+
+        // 2. Add event listener to create new DOM elements
+        addBtn.addEventListener('click', function() {
+            const text = itemInput.value.trim();
+            
+            if (text !== '') {
+                // Create new <li> element
+                const li = document.createElement('li');
+                li.textContent = text;
+
+                // Create a delete button for the item
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Delete';
+                
+                // Event listener to remove this specific <li> from the DOM
+                deleteBtn.addEventListener('click', function() {
+                    itemList.removeChild(li);
+                });
+
+                // Append the delete button to the <li>, and <li> to the <ul>
+                li.appendChild(deleteBtn);
+                itemList.appendChild(li);
+
+                // Reset input field
+                itemInput.value = '';
+                itemInput.focus();
+            }
+        });
+
+        // Allow pressing "Enter" to add items
+        itemInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addBtn.click();
+            }
+        });
+
+        // 3. Clear all items from the DOM
+        clearBtn.addEventListener('click', function() {
+            itemList.innerHTML = '';
+        });
+    </script>
+
+</body>
+</html>

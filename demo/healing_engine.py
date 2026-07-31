@@ -12,7 +12,9 @@ import config
 import store
 
 class UIHeuristicEngine:
-    def __init__(self, fingerprint_path=config.POMODORO_FINGERPRINTS_PATH):
+    def __init__(self, fingerprint_path=None):
+        if fingerprint_path is None:
+            fingerprint_path = config.ACTIVE_FINGERPRINT_PATH
         self.fingerprint_path = fingerprint_path
         self.reload_fingerprints()
 
@@ -72,101 +74,383 @@ class UIHeuristicEngine:
     def select_target_fingerprint(self, broken_selector, min_ratio=40.0):
         """Tie the broken locator to the fingerprint it was MEANT to find.
 
-        Scores the broken identifier against each fingerprint's element id/key and
-        returns the best (key, ratio) — but only if it clears min_ratio. Below
-        that we return (None, ratio) so the caller falls back to a global scan
-        (preserves old behaviour for ids unrelated to any fingerprint).
+        Scores the broken identifier against each fingerprint's element id, key,
+        and locator_value — returning the best (key, ratio) but only if it clears
+        min_ratio. Below that we return (None, ratio) so the caller falls back to
+        a global scan (preserves old behaviour for ids unrelated to any fingerprint).
+
+        Matching against locator_value as well as element_id means that locators
+        like By.CSS_SELECTOR("button.btn-primary") match the fingerprint captured
+        from that exact locator during Learning Mode.
         """
         broken_value = self._extract_broken_value(broken_selector)
         if not broken_value:
             return None, 0.0
         best_key, best_ratio = None, 0.0
         for key, golden in self.fingerprints.items():
-            ident = golden.get("element_id") or key
-            ratio = self.calculate_similarity(broken_value, ident)
-            if ratio > best_ratio:
-                best_ratio, best_key = ratio, key
+            # Try element_id first, then locator_value, then key
+            candidates = [
+                golden.get("element_id") or "",
+                str(golden.get("locator_value") or ""),
+                key,
+            ]
+            for ident in candidates:
+                if not ident:
+                    continue
+                # Also try stripping CSS punctuation for comparison
+                stripped = ident.lstrip("#.").strip()
+                ratio = max(
+                    self.calculate_similarity(broken_value, ident),
+                    self.calculate_similarity(broken_value, stripped),
+                )
+                if ratio > best_ratio:
+                    best_ratio = ratio
+                    best_key = key
         return (best_key, best_ratio) if best_ratio >= min_ratio else (None, best_ratio)
 
     def evaluate_live_candidates(self, broken_selector, candidates):
         self.reload_fingerprints()  # pick up Learning-Mode baseline / prior self-corrections
         best_match_id = None
         highest_score = 0.0
+        second_score = 0.0
         winning_metrics = {}
         best_candidate = None
+        reason = ""
 
         # Intent-aware: resolve WHICH element this broken locator meant, so two
         # different broken locators don't both heal to the same top element.
         #
         # Safety gate: if NO baseline fingerprint resembles the broken locator, we
         # genuinely don't know what the caller was trying to find. Refuse to guess.
-        # (A global scan would otherwise always self-match SOME live element at
-        # ~98% — e.g. a random <div> — and "heal" to it, defeating the whole
-        # CRITICAL-FAULT safety story.) Returning no match keeps confidence at 0
-        # so commit_heal_to_log routes to 'halt' / manual intervention.
         target_key, _ = self.select_target_fingerprint(broken_selector)
         if not target_key:
-            return None, 0.0, {}, None
+            return None, 0.0, {}, None, "", 0.0
         search_space = {target_key: self.fingerprints[target_key]}
 
         for element_key, golden in search_space.items():
+            scored = []
             for cand in candidates:
-                # Tag family must match (BUTTON vs button normalised); acts as gate.
+                # Rule-based tag handling: tag mismatch = -25% penalty, same tag = no penalty.
                 golden_tag = str(golden.get("tag_name", "")).lower()
                 cand_tag = str(cand.get("tag_name", "")).lower()
+                tag_penalty = 0.0 if cand_tag == golden_tag else 25.0
 
-                if cand_tag != golden_tag:
-                    continue
+                # R1–R4 scoring (proposal Table 3.1)
+                r1 = self.calculate_similarity(cand.get("inner_text", ""), golden.get("inner_text", ""))            # R1: visible text
+                r2 = self.calculate_xpath_depth_similarity(cand.get("xpath", ""), golden.get("xpath_pattern", "")) # R2: tree structure
+                r3 = self.calculate_similarity(cand.get("css_class", ""), golden.get("css_class", ""))             # R3: CSS class
+                r4 = self.calculate_neighbor_similarity(cand.get("neighbors", []), golden.get("neighbors", []))   # R4: surrounding elements
 
-                # Weighted heuristic per proposal Table 3.1 (R1-R4).
-                r1 = self.calculate_similarity(cand.get("inner_text", ""), golden.get("inner_text", ""))         # text
-                r2 = self.calculate_xpath_depth_similarity(cand.get("xpath", ""), golden.get("xpath_pattern", ""))  # xpath
-                r3 = self.calculate_similarity(cand.get("css_class", ""), golden.get("css_class", ""))           # css
-                r4 = self.calculate_neighbor_similarity(cand.get("neighbors", []), golden.get("neighbors", []))  # neighbors
+                # Weight normalization (report §3.3.2): "Where an attribute is
+                # absent from both the Golden Fingerprint and the candidate
+                # element — that rule is excluded from the calculation and the
+                # remaining weights are normalized, so that the absence of an
+                # attribute is not scored as a mismatch."
+                weights = {"r1": 0.40, "r2": 0.30, "r3": 0.20, "r4": 0.10}
+                scores = {"r1": r1, "r2": r2, "r3": r3, "r4": r4}
 
-                composite_score = (r1 * 0.40) + (r2 * 0.30) + (r3 * 0.20) + (r4 * 0.10)
+                golden_text = str(golden.get("inner_text", "")).strip()
+                cand_text = str(cand.get("inner_text", "")).strip()
+                golden_css = str(golden.get("css_class", "")).strip()
+                cand_css = str(cand.get("css_class", "")).strip()
+                golden_xp = str(golden.get("xpath_pattern", "")).strip()
+                cand_xp = str(cand.get("xpath", "")).strip()
+                golden_nb = golden.get("neighbors", [])
+                cand_nb = cand.get("neighbors", [])
 
-                if composite_score > highest_score:
-                    highest_score = composite_score
-                    best_match_id = element_key
-                    best_candidate = cand  # remember the LIVE element that won
-                    winning_metrics = {
-                        "R1_text_40": round(r1, 2),
-                        "R2_xpath_30": round(r2, 2),
-                        "R3_css_20": round(r3, 2),
-                        "R4_neighbors_10": round(r4, 2),
-                    }
+                if not golden_text and not cand_text:
+                    weights["r1"] = 0
+                if not golden_xp and not cand_xp:
+                    weights["r2"] = 0
+                if not golden_css and not cand_css:
+                    weights["r3"] = 0
+                if not golden_nb and not cand_nb:
+                    weights["r4"] = 0
 
-        return best_match_id, highest_score, winning_metrics, best_candidate
+                total_w = sum(weights.values())
+                if total_w > 0:
+                    for k in weights:
+                        weights[k] = weights[k] / total_w
 
-    def canonical_locator(self, match_id):
+                composite_score = (scores["r1"] * weights["r1"] +
+                                   scores["r2"] * weights["r2"] +
+                                   scores["r3"] * weights["r3"] +
+                                   scores["r4"] * weights["r4"]) - tag_penalty
+                composite_score = min(100.0, max(0.0, composite_score))
+
+                scored.append((composite_score, cand, {
+                    "R1_inner_text_40": round(r1, 2),
+                    "R2_xpath_pattern_30": round(r2, 2),
+                    "R3_css_class_20": round(r3, 2),
+                    "R4_neighbors_10": round(r4, 2),
+                }, weights))
+
+            if not scored:
+                continue
+
+            scored.sort(key=lambda x: x[0], reverse=True)
+            top_score, top_cand, top_metrics, top_weights = scored[0]
+
+            if top_score > highest_score:
+                highest_score = top_score
+                best_match_id = element_key
+                best_candidate = top_cand
+                winning_metrics = top_metrics
+                second_score = scored[1][0] if len(scored) > 1 else 0.0
+
+                # Reason for repair (report §3.7): "A generated explanation stating
+                # which attributes matched, which changed, and which rules
+                # determined the outcome."
+                reason = self._build_reason(golden, top_cand, top_metrics, tag_penalty)
+
+        return best_match_id, highest_score, winning_metrics, best_candidate, reason, second_score
+
+    def _build_reason(self, golden, candidate, metrics, tag_penalty):
+        """Generate a human-readable explanation of the repair decision."""
+        parts = []
+        golden_tag = str(golden.get("tag_name", "")).lower()
+        cand_tag = str(candidate.get("tag_name", "")).lower()
+
+        if tag_penalty > 0:
+            parts.append(f"Tag changed from <{golden_tag}> to <{cand_tag}> (−{tag_penalty:.0f}%)")
+
+        r1 = metrics.get("R1_inner_text_40", 0)
+        r2 = metrics.get("R2_xpath_pattern_30", 0)
+        r3 = metrics.get("R3_css_class_20", 0)
+        r4 = metrics.get("R4_neighbors_10", 0)
+
+        if r1 >= 80:
+            parts.append("visible text matched")
+        elif r1 > 0:
+            parts.append(f"text partially matched ({r1:.0f}%)")
+        elif golden.get("inner_text", "").strip():
+            parts.append("text was changed")
+
+        if r2 >= 80:
+            parts.append("DOM position unchanged")
+        elif r2 > 0:
+            parts.append(f"XPath structurally similar ({r2:.0f}%)")
+
+        if r3 >= 80:
+            parts.append("CSS class matched")
+        elif r3 > 0:
+            parts.append(f"CSS class partially matched ({r3:.0f}%)")
+        elif golden.get("css_class", "").strip():
+            parts.append("CSS class was renamed")
+
+        if r4 >= 80:
+            parts.append("neighbouring elements matched")
+        elif r4 > 0 and golden.get("neighbors"):
+            parts.append(f"neighbours partially matched ({r4:.0f}%)")
+
+        if not parts:
+            return "Healed via composite heuristic similarity."
+        return "; ".join(parts) + "."
+
+    def canonical_locator(self, match_id, best_candidate=None):
         """Stable write-back token for a matched fingerprint.
 
-        Prefer the element id; fall back to locator_value stripped of a leading
-        '#'. Returns "" when match_id is unknown so callers can no-op safely.
+        Report §3.4.3 Step 6: "extracts id, name, data-attr, aria-label, input
+        type, link text and ranks them by expected stability. The highest-ranked
+        attribute is expressed as the repaired locator."
+
+        Ranking order (most stable → least stable):
+        1. id            — unique, semantic, survives most refactors
+        2. name          — form-field standard, stable across redesigns
+        3. data-testid   — explicit test anchor, designed to be stable
+        4. data-test     — same rationale
+        5. data-qa       — same rationale
+        6. aria-label    — accessibility anchor, semantic
+        7. text           — visible label, survives class/id renames
+        8. css class      — styling, renamed during redesigns but present
+        9. xpath          — structural, fragile but always available
         """
         golden = self.fingerprints.get(match_id) if match_id else None
         if not golden:
             return ""
-        element_id = golden.get("element_id")
+
+        # 1. Live id (preferred — reflects the CURRENT state after refactor)
+        live_id = (best_candidate or {}).get("id") or ""
+        if live_id:
+            return live_id
+
+        # 2. Golden element id
+        element_id = golden.get("element_id") or ""
         if element_id:
             return element_id
+
+        # 3. name attribute
+        live_name = (best_candidate or {}).get("name") or ""
+        golden_name = golden.get("element_name") or ""
+        if live_name:
+            return live_name
+        if golden_name:
+            return golden_name
+
+        # 4-6. data-* attributes
+        for attr in ("data-testid", "data-test", "data-qa"):
+            live_val = (best_candidate or {}).get(attr.replace("-", "_"), "")
+            if not live_val:
+                live_val = (best_candidate or {}).get("dataset", "")
+                if isinstance(live_val, str) and attr in live_val:
+                    import json as _json
+                    try:
+                        ds = _json.loads(live_val)
+                        live_val = ds.get(attr, "")
+                    except Exception:
+                        live_val = ""
+            golden_attrs = golden.get("data_attrs", {})
+            if live_val:
+                return live_val
+            if golden_attrs.get(attr):
+                return golden_attrs[attr]
+
+        # 6. aria-label
+        live_aria = (best_candidate or {}).get("aria_label") or ""
+        golden_aria = golden.get("aria_label") or ""
+        if live_aria:
+            return live_aria
+        if golden_aria:
+            return golden_aria
+
+        # 7. text content
+        live_text = (best_candidate or {}).get("inner_text") or ""
+        golden_text = golden.get("inner_text") or ""
+        tag = (best_candidate or {}).get("tag_name") or golden.get("tag_name") or ""
+        if live_text and tag:
+            return f"{tag}[text='{live_text}']"
+        if golden_text and tag:
+            return f"{tag}[text='{golden_text}']"
+
+        # 8. css class
+        live_css = (best_candidate or {}).get("css_class") or ""
+        golden_css = golden.get("css_class") or ""
+        if live_css and tag:
+            primary = live_css.split()[0]
+            return f"{tag}.{primary}"
+        if golden_css and tag:
+            primary = golden_css.split()[0]
+            return f"{tag}.{primary}"
+
+        # 9. locator value from fingerprint
         return str(golden.get("locator_value", "")).lstrip("#")
 
-    def update_metadata_locator(self, match_id):
+    def _broken_source_token(self, broken_selector):
+        """Bare identifier the QA script actually used (e.g. clearBtn), so a
+        source patch matches `By.ID, "clearBtn"` rather than the wrapped
+        "id='clearBtn'" diagnostic form that the heal logs use."""
+        return self._extract_broken_value(broken_selector)
+
+    def generate_multi_locators(self, match_id, best_candidate=None):
+        """Generate multiple locator strategies for a healed element.
+        
+        Returns a list of locator strategies in order of preference (report
+        §3.4.3 Step 6 — ranked by stability):
+        1. ID (most stable)
+        2. CSS Selector (tag + class)
+        3. XPath with text
+        4. Live XPath from DOM scan
+        5. Original locator from fingerprint
+        """
+        golden = self.fingerprints.get(match_id) if match_id else None
+        if not golden:
+            return []
+        
+        locators = []
+        
+        # Strategy 1: ID (most stable) — prefer live candidate's id
+        live_id = (best_candidate or {}).get("id") or ""
+        element_id = golden.get("element_id") or ""
+        use_id = live_id or element_id
+        if use_id:
+            locators.append({
+                "strategy": "id",
+                "by": "id",
+                "value": use_id,
+                "confidence": 95,
+                "description": "Element ID (most stable)"
+            })
+        
+        # Strategy 2: name attribute
+        live_name = (best_candidate or {}).get("name") or ""
+        golden_name = golden.get("element_name") or ""
+        use_name = live_name or golden_name
+        if use_name:
+            locators.append({
+                "strategy": "name",
+                "by": "name",
+                "value": use_name,
+                "confidence": 90,
+                "description": "Name attribute"
+            })
+
+        # Strategy 3: CSS Selector (tag + class)
+        css_class = (best_candidate or {}).get("css_class") or golden.get("css_class", "")
+        tag_name = (best_candidate or {}).get("tag_name") or golden.get("tag_name", "")
+        if css_class and tag_name:
+            primary_class = css_class.split()[0]
+            css_selector = f"{tag_name}.{primary_class}"
+            locators.append({
+                "strategy": "css",
+                "by": "css selector",
+                "value": css_selector,
+                "confidence": 85,
+                "description": "CSS Selector (tag + class)"
+            })
+        
+        # Strategy 4: XPath with text (most flexible)
+        inner_text = (best_candidate or {}).get("inner_text") or golden.get("inner_text", "")
+        if inner_text and tag_name:
+            xpath = f"//{tag_name}[text()='{inner_text}']"
+            locators.append({
+                "strategy": "xpath",
+                "by": "xpath",
+                "value": xpath,
+                "confidence": 75,
+                "description": "XPath with text content"
+            })
+        
+        # Strategy 5: XPath from candidate (if available)
+        if best_candidate and best_candidate.get("xpath"):
+            locators.append({
+                "strategy": "xpath_live",
+                "by": "xpath",
+                "value": best_candidate["xpath"],
+                "confidence": 90,
+                "description": "Live XPath from DOM scan"
+            })
+        
+        # Strategy 6: Original locator (fallback)
+        locator_value = golden.get("locator_value", "")
+        locator_by = golden.get("locator_by", "")
+        if locator_value and locator_by:
+            locators.append({
+                "strategy": "original",
+                "by": locator_by,
+                "value": locator_value,
+                "confidence": 70,
+                "description": "Original locator from fingerprint"
+            })
+        
+        return locators
+
+    def update_metadata_locator(self, match_id, best_candidate=None):
         """Self-Correction: persist the healed locator into the golden-fingerprint
         metadata (proposal §3.4.3 Step 6 / Fig 3.3 'Update Metadata Repository').
 
         Sets healed_locator_value/by on the matched fingerprint and writes the
-        registry atomically (temp file -> os.replace). Best-effort: returns the
-        healed locator string, or '' on no-op/failure (never raises)."""
-        token = self.canonical_locator(match_id)
+        registry atomically (temp file -> os.replace). The healed locator is
+        derived from the LIVE candidate's current id (when present) so a renamed
+        element records its NEW id rather than the stale baseline id. Best-effort:
+        returns the healed locator string, or '' on no-op/failure (never raises)."""
+        token = self.canonical_locator(match_id, best_candidate)
         if not token or match_id not in self.fingerprints:
             return ""
         healed_value = f"#{token}"
         try:
             self.fingerprints[match_id]["healed_locator_value"] = healed_value
             self.fingerprints[match_id]["healed_locator_by"] = "css selector"
+            self.fingerprints[match_id]["healed_source_token"] = token
             tmp = self.fingerprint_path + ".tmp"
             with open(tmp, "w", encoding="utf-8") as f:
                 json.dump(self.fingerprints, f, indent=2)
@@ -176,16 +460,42 @@ class UIHeuristicEngine:
             print(f"⚠️ metadata self-correction failed for '{match_id}': {e}")
             return ""
 
-    def commit_heal_to_log(self, broken_selector, match_id, score, metrics):
-        """Applies confidence policies and persists the heal result (ACTIVE path)."""
+    def commit_heal_to_log(self, broken_selector, match_id, score, metrics, approval_mode=False, script_path=None, line_number=None, best_candidate=None, reason="", second_score=0.0):
+        """Applies confidence policies and persists the heal result (ACTIVE path).
+        
+        approval_mode: If True, queue the heal for human review instead of auto-applying
+        script_path: Path to the QA test script (required for approval_mode)
+        line_number: Line number where the broken locator appears (optional)
+        best_candidate: The winning LIVE element dict; its current `id` is used as
+                        the healed token so a renamed element heals to its NEW id.
+        reason: Human-readable explanation of why this candidate was selected (§3.7).
+        second_score: The score of the second-best candidate, used for the margin
+                      check (§3.3.2: "winning candidate must exceed next-best by
+                      a minimum margin").
+        """
         timestamp = datetime.utcnow().isoformat() + "+00:00"
 
-        if score >= config.CONFIDENCE_THRESHOLD_HIGH:
+        # Margin check (report §3.3.2): "an automatic heal additionally requires
+        # the winning candidate to exceed the next-best candidate by a minimum
+        # margin, so that a page containing two similar elements cannot produce
+        # a confident but incorrect substitution."
+        MARGIN_THRESHOLD = 10.0
+        margin = score - second_score
+        margin_ok = margin >= MARGIN_THRESHOLD or second_score == 0.0
+
+        if score >= config.CONFIDENCE_THRESHOLD_HIGH and margin_ok:
             policy, status, lifecycle = "AUTOMATIC HEAL", "success", "continue"
+        elif score >= config.CONFIDENCE_THRESHOLD_HIGH and not margin_ok:
+            # High score but narrow margin → downgrade to cautious
+            policy, status, lifecycle = "CAUTIOUS HEAL", "warning", "verify"
+            reason = (reason + " " if reason else "") + f"Downgraded to cautious: margin over next-best candidate is only {margin:.1f}% (threshold {MARGIN_THRESHOLD}%)."
         elif config.CONFIDENCE_THRESHOLD_LOW <= score < config.CONFIDENCE_THRESHOLD_HIGH:
             policy, status, lifecycle = "CAUTIOUS HEAL", "warning", "verify"
         else:
             policy, status, lifecycle = "CRITICAL FAULT", "failed", "halt"
+
+        # Generate QA recommendation (report §3.7)
+        recommendation = self._generate_recommendation(match_id, best_candidate, score, policy)
 
         recovered_val = "unknown"
         if match_id and match_id in self.fingerprints:
@@ -206,9 +516,15 @@ class UIHeuristicEngine:
                 "source": "UIHeuristicEngine"
             })
         else:
-            # Self-Correction: persist healed locator into golden-fingerprint metadata.
-            healed_locator = self.update_metadata_locator(match_id)
-            store.append("ui_heals", {
+            healed_locator = self.update_metadata_locator(match_id, best_candidate)
+
+            old_token = self._broken_source_token(broken_selector)
+            new_token = self.canonical_locator(match_id, best_candidate)
+
+            if healed_locator:
+                recovered_val = healed_locator
+
+            heal_entry = {
                 "timestamp": timestamp,
                 "broken_selector": broken_selector,
                 "recovered_selector": recovered_val,
@@ -216,10 +532,57 @@ class UIHeuristicEngine:
                 "confidence_score": round(score, 2),
                 "policy": policy,
                 "status": status,
+                "reason": reason,
+                "recommendation": recommendation,
+                "margin_over_second": round(margin, 2),
                 "details": {"component_scores": metrics}
-            })
+            }
+
+            if approval_mode and script_path:
+                from approval_workflow import workflow
+                
+                heal_id = workflow.queue_heal(
+                    script_path=script_path,
+                    old_locator=old_token,
+                    new_locator=new_token,
+                    confidence=score,
+                    metrics=metrics,
+                    line_number=line_number
+                )
+                
+                lifecycle = "pending_approval"
+                heal_entry["heal_id"] = heal_id
+                heal_entry["status"] = "pending_approval"
+            
+            store.append("ui_heals", heal_entry)
 
         return lifecycle, recovered_val, match_id
+
+    def _generate_recommendation(self, match_id, best_candidate, score, policy):
+        """Generate a QA recommendation (report §3.7)."""
+        golden = self.fingerprints.get(match_id) if match_id else None
+        if not golden:
+            return "Review the healed locator manually."
+
+        recs = []
+        if policy == "AUTOMATIC HEAL":
+            recs.append("Update the test script to use the repaired locator.")
+        elif policy == "CAUTIOUS HEAL":
+            recs.append("Review this heal in the dashboard before accepting it.")
+
+        el_id = golden.get("element_id") or ""
+        css = golden.get("css_class") or ""
+        if not el_id and css:
+            recs.append("Request a stable element ID from the developer — class-based locators are fragile.")
+        elif not el_id:
+            recs.append("Request a stable element ID from the developer.")
+
+        if golden.get("tag_name") == "path" or golden.get("tag_name") == "svg":
+            recs.append("SVG elements lack stable identifiers — consider adding a data-testid attribute.")
+
+        if not recs:
+            recs.append("No action needed — locator healed successfully.")
+        return " ".join(recs)
 
 
 class DynamicInfrastructureHealer:

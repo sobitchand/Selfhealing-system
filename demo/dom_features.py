@@ -53,7 +53,25 @@ def compute_neighbors(element, limit=3):
 
 
 # Tags treated as healable candidates when scraping the live DOM.
-CANDIDATE_TAGS = ["button", "div", "span", "a", "input"]
+# Rule-based: no tag restrictions. The R1-R4 scoring handles ALL elements
+# regardless of tag type. A broken <h1>, <p>, <img>, <label>, <li>, <td>
+# heals the same way as a <button> or <input>.
+# The only filter is a practical limit (200 elements) to keep healing fast.
+CANDIDATE_TAGS = [
+    "a", "abbr", "address", "article", "aside", "b", "bdi", "bdo",
+    "blockquote", "body", "br", "button", "caption", "cite", "code",
+    "col", "colgroup", "data", "datalist", "dd", "del", "details", "dfn",
+    "dialog", "div", "dl", "dt", "em", "embed", "fieldset", "figcaption",
+    "figure", "footer", "form", "h1", "h2", "h3", "h4", "h5", "h6",
+    "header", "hgroup", "hr", "i", "iframe", "img", "input", "ins",
+    "kbd", "label", "legend", "li", "main", "map", "mark", "menu",
+    "meter", "nav", "noscript", "object", "ol", "optgroup", "option",
+    "output", "p", "picture", "pre", "progress", "q", "rp", "rt",
+    "ruby", "s", "samp", "script", "section", "select", "slot", "small",
+    "span", "strong", "sub", "summary", "sup", "table", "tbody", "td",
+    "template", "textarea", "tfoot", "th", "thead", "time", "tr", "u",
+    "ul", "var", "video", "wbr",
+]
 
 # One-shot candidate harvest. The per-element approach (tag_name + get_attribute
 # x2 + a compute_xpath execute_script + a compute_neighbors find_elements, for
