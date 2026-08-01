@@ -134,34 +134,66 @@ def set_confidence_thresholds(high, low):
 
 def reset_to_defaults():
     """Reset all configuration to defaults. Deletes override file and restores
-    in-memory config module values to their built-in defaults."""
+    in-memory config module values to their built-in defaults.
+
+    These values must track config.py exactly. APPROVAL_MODE_ENABLED in
+    particular: defaulting it to False here would let one click on "Reset to
+    Defaults" silently disable the human review gate, which is the one behaviour
+    a QA team cannot audit.
+    """
     if os.path.exists(CONFIG_OVERRIDE_PATH):
         os.remove(CONFIG_OVERRIDE_PATH)
 
     # Restore in-memory config module to built-in defaults
-    config.SOURCE_HEAL_ENABLED = True
-    config.SOURCE_HEAL_TARGETS = [
-        os.path.join(config.BASE_DIR, "test_comprehensive.py"),
-        os.path.join(config.BASE_DIR, "test_index.py"),
-    ]
+    config.SOURCE_HEAL_ENABLED = False
+    config.SOURCE_HEAL_TARGETS = []
     config.CONFIDENCE_THRESHOLD_HIGH = 75.0
     config.CONFIDENCE_THRESHOLD_LOW = 20.0
-    config.APPROVAL_MODE_ENABLED = False
+    config.APPROVAL_MODE_ENABLED = True
     config.GIT_INTEGRATION_ENABLED = False
     config.TARGET_APP_PORT = int(os.environ.get("TARGET_APP_PORT", "8000"))
     config.TARGET_URL = os.environ.get("TARGET_URL", f"http://127.0.0.1:{config.TARGET_APP_PORT}")
     config.TARGET_HTML_FILE = os.environ.get("TARGET_HTML_FILE", "")
-    config.ACTIVE_FINGERPRINT_PATH = config.POMODORO_FINGERPRINTS_PATH
+    # The baseline belongs to whichever app is registered as active, not to a
+    # fixed path -- a config reset must not orphan the engine from its baseline.
+    sync_active_app()
+
+
+def sync_active_app():
+    """Point config at the registered application marked active on disk.
+
+    The application registry is the source of truth for which baseline the
+    engine uses -- config.ACTIVE_FINGERPRINT_PATH is only a placeholder until an
+    app is activated. A separately-launched process (the dashboard) has to read
+    that choice back, or it reports a baseline nobody is healing against.
+
+    Returns the active app record, or None when nothing is registered.
+    """
+    import app_registry
+
+    record = app_registry.active_app()
+    if not record:
+        config.ACTIVE_FINGERPRINT_PATH = config.DEFAULT_FINGERPRINTS_PATH
+        config.POMODORO_FINGERPRINTS_PATH = config.DEFAULT_FINGERPRINTS_PATH
+        config.ACTIVE_APP_ID = ""
+        return None
+
+    config.ACTIVE_FINGERPRINT_PATH = record["fingerprint_path"]
+    config.POMODORO_FINGERPRINTS_PATH = record["fingerprint_path"]
+    config.ACTIVE_APP_ID = record["app_id"]
+    if record.get("base_url"):
+        config.TARGET_URL = record["base_url"]
+    return record
 
 
 def apply_overrides():
     """Apply configuration overrides to the config module.
-    
+
     Call this at application startup to ensure all modules use the
     configured values instead of hardcoded defaults.
     """
     overrides = load_override()
-    
+
     if "source_heal_enabled" in overrides:
         config.SOURCE_HEAL_ENABLED = overrides["source_heal_enabled"]
     
@@ -185,6 +217,11 @@ def apply_overrides():
         if os.path.exists(fp_path):
             config.ACTIVE_FINGERPRINT_PATH = fp_path
             config.POMODORO_FINGERPRINTS_PATH = fp_path
+
+    # Last, so the registry wins: an override written before the app was
+    # re-registered would otherwise pin this process to a stale baseline while
+    # the test runner heals against a different one.
+    sync_active_app()
 
     if "target_url" in overrides:
         config.TARGET_URL = overrides["target_url"]

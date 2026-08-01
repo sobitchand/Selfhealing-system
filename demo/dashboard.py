@@ -41,7 +41,7 @@ ROW_LIMIT = 12  # most recent rows per table; keeps the chart above the fold
 def load_json_file(path, default_factory):
     if os.path.exists(path):
         try:
-            with open(path, "r") as f:
+            with open(path, "r", encoding="utf-8") as f:
                 return json.load(f)
         except Exception:
             return default_factory()
@@ -79,6 +79,51 @@ def score(value):
         return f"{float(value):.0f}"
     except (TypeError, ValueError):
         return "—"
+
+
+def _script(name, args, spinner, timeout=120):
+    """Run one of the project's own scripts and surface its output verbatim.
+
+    The dashboard is read-only about healing: these buttons are shortcuts for
+    the commands in the demo guide, not a second code path. Showing raw stdout
+    keeps them auditable -- what you see here is what the terminal would print.
+    """
+    import subprocess
+
+    with st.spinner(spinner):
+        try:
+            result = subprocess.run(
+                [sys.executable, os.path.join(config.BASE_DIR, name), *args],
+                cwd=config.BASE_DIR, capture_output=True, text=True, timeout=timeout,
+                # Every entry point reconfigures its stdout to UTF-8 (config.py)
+                # so the emoji in its progress output survive. Decoding that with
+                # the Windows cp1252 default raises UnicodeDecodeError inside
+                # subprocess's reader thread and silently loses the output.
+                encoding="utf-8", errors="replace",
+            )
+        except subprocess.TimeoutExpired:
+            st.error(f"{name} timed out after {timeout}s")
+            return False
+        except Exception as exc:
+            st.error(f"{name} could not be started: {exc}")
+            return False
+
+    # Read by the auto-refresh guard at the bottom of the page: without it the
+    # 3s rerun clears this output before anyone can read it.
+    st.session_state["cmd_output_pending"] = True
+
+    if result.stdout:
+        st.code(result.stdout[-4000:], language="text")
+    if result.returncode != 0:
+        st.error(result.stderr[-2000:] or f"{name} exited with {result.returncode}")
+        return False
+    st.success(f"{name} finished. Press R to refresh the other tabs.")
+    return True
+
+
+def _cli(args, spinner, timeout=120):
+    """Run a cli.py subcommand. Same contract as _script."""
+    return _script("cli.py", args, spinner, timeout=timeout)
 
 
 logs = store.read_all()
@@ -317,13 +362,13 @@ with tab_apps:
                 col1, col2, col3 = st.columns(3)
                 col1.download_button("Markdown report", reports.to_markdown(record),
                                      file_name=f"{selected_run_id}.md",
-                                     mime="text/markdown", use_container_width=True)
+                                     mime="text/markdown", width="stretch")
                 col2.download_button("Heals (CSV)", reports.to_csv(record),
                                      file_name=f"{selected_run_id}.csv",
-                                     mime="text/csv", use_container_width=True)
+                                     mime="text/csv", width="stretch")
                 col3.download_button("Raw run (JSON)", reports.to_json(record),
                                      file_name=f"{selected_run_id}.json",
-                                     mime="application/json", use_container_width=True)
+                                     mime="application/json", width="stretch")
 
                 patch = reports.patch_suggestions(record)
                 if patch:
@@ -418,8 +463,14 @@ with tab_ui:
         )
     else:
         df = pd.DataFrame(records)
-        successes = len(df[df["status"] == "success"])
-        warnings = len(df[df["status"] == "warning"])
+        # A heal queued for approval was still applied at runtime; classify it
+        # by the policy the engine assigned, not the review-queue status.
+        successes = len([r for r in records if r.get("status") == "success"
+                         or (r.get("status") == "pending_approval"
+                             and r.get("policy") == "AUTOMATIC HEAL")])
+        warnings = len([r for r in records if r.get("status") == "warning"
+                        or (r.get("status") == "pending_approval"
+                            and r.get("policy") != "AUTOMATIC HEAL")])
         failures = len([
             a for a in scoped("alerts") if a.get("source") == "UIHeuristicEngine"
         ])
@@ -574,7 +625,7 @@ with tab_ui:
             legend=dict(orientation="h", yanchor="bottom", y=1.02,
                         xanchor="left", x=0, title=""),
         )
-        st.plotly_chart(figure, use_container_width=True,
+        st.plotly_chart(figure, width="stretch",
                         config={"displayModeBar": False})
 
         # ---- Log history per locator (report §3.7) ----
@@ -673,11 +724,21 @@ with tab_approval:
                     
                     st.markdown("**Confidence Breakdown:**")
                     metrics = heal.get('metrics', {})
+
+                    def rule_score(*names):
+                        """The engine writes R1_inner_text_40 / R2_xpath_pattern_30 /
+                        R3_css_class_20; accept the shorter historical spellings too so
+                        entries queued by an older build still render."""
+                        for name in names:
+                            if name in metrics:
+                                return float(metrics[name] or 0)
+                        return 0.0
+
                     st.markdown(
-                        f"- R1 (Text): {metrics.get('R1_text_40', 0):.0f}%\n"
-                        f"- R2 (XPath): {metrics.get('R2_xpath_30', 0):.0f}%\n"
-                        f"- R3 (CSS): {metrics.get('R3_css_20', 0):.0f}%\n"
-                        f"- R4 (Neighbors): {metrics.get('R4_neighbors_10', 0):.0f}%"
+                        f"- R1 (Text): {rule_score('R1_inner_text_40', 'R1_text_40'):.0f}%\n"
+                        f"- R2 (XPath): {rule_score('R2_xpath_pattern_30', 'R2_xpath_30'):.0f}%\n"
+                        f"- R3 (CSS): {rule_score('R3_css_class_20', 'R3_css_20'):.0f}%\n"
+                        f"- R4 (Neighbors): {rule_score('R4_neighbors_10'):.0f}%"
                     )
                     
                     st.markdown("**Diff:**")
@@ -686,7 +747,7 @@ with tab_approval:
                 with col2:
                     st.markdown("<br>", unsafe_allow_html=True)
                     
-                    if st.button("✅ Approve", key=f"approve_{heal['heal_id']}", use_container_width=True):
+                    if st.button("✅ Approve", key=f"approve_{heal['heal_id']}", width="stretch"):
                         success, msg = workflow.approve_heal(heal['heal_id'], create_pr=False)
                         if success:
                             st.success(msg)
@@ -700,7 +761,7 @@ with tab_approval:
                         placeholder="e.g., Wrong element matched"
                     )
                     
-                    if st.button("❌ Reject", key=f"reject_{heal['heal_id']}", use_container_width=True):
+                    if st.button("❌ Reject", key=f"reject_{heal['heal_id']}", width="stretch"):
                         success, msg = workflow.reject_heal(heal['heal_id'], reason or None)
                         if success:
                             st.warning(msg)
@@ -932,8 +993,13 @@ with tab_analytics:
         ui_heals = logs.get("ui_heals", [])
         if ui_heals:
             total_heals = len(ui_heals)
-            successful_heals = len([h for h in ui_heals if h.get("status") == "success"])
-            cautious_heals = len([h for h in ui_heals if h.get("status") == "warning"])
+            # pending_approval heals were applied at runtime; classify by policy.
+            successful_heals = len([h for h in ui_heals if h.get("status") == "success"
+                                    or (h.get("status") == "pending_approval"
+                                        and h.get("policy") == "AUTOMATIC HEAL")])
+            cautious_heals = len([h for h in ui_heals if h.get("status") == "warning"
+                                  or (h.get("status") == "pending_approval"
+                                      and h.get("policy") != "AUTOMATIC HEAL")])
             failed_heals = len([h for h in ui_heals if h.get("status") == "failed"])
             
             success_rate = (successful_heals / total_heals * 100) if total_heals > 0 else 0
@@ -977,7 +1043,7 @@ with tab_analytics:
                 fig.add_hline(y=20, line_dash="dash", line_color="orange", 
                              annotation_text="Safety gate")
                 fig.update_layout(height=400, showlegend=False)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
         else:
             st.info("No healing data available yet. Run tests to generate metrics.")
 
@@ -1098,8 +1164,9 @@ with tab_config:
     st.markdown(
         theme.section(
             "System Configuration",
-            "Configure the self-healing system without editing code. Changes are saved to "
-            "<code>data/config_override.json</code> and applied to all future healing operations.",
+            "Configure the self-healing system without editing code. Changes are "
+            "saved to data/config_override.json and applied to all future healing "
+            "operations.",
         ),
         unsafe_allow_html=True,
     )
@@ -1107,273 +1174,176 @@ with tab_config:
     current_config = config_manager.get_config()
 
     # ------------------------------------------------------------------
-    # Target Application Configuration
+    # Target application
+    #
+    # Which application the engine heals is decided by the registry
+    # (data/apps/), so this section reads and writes that. It used to offer a
+    # standalone target URL, port and HTML file: those drove the retired
+    # http.server demo and had no effect on selfheal.run(app=...), which is
+    # worse than not offering them at all.
     # ------------------------------------------------------------------
     st.markdown(
         theme.section(
-            "Target Application",
-            "Point the healing system at any HTML file or web application. "
-            "Configure the URL, HTML file, and fingerprint profile here.",
+            "Target application",
+            "The application every heal is scored against. Register one with "
+            "python cli.py register --app <id> --url <url>; the active app "
+            "decides which Golden Fingerprint baseline the engine reads and writes.",
         ),
         unsafe_allow_html=True,
     )
 
-    col_url, col_port = st.columns([3, 1])
+    active_record = app_registry.active_app()
+    active_id = active_record["app_id"] if active_record else None
+    cfg_app_id = None
 
-    with col_port:
-        target_port = st.number_input(
-            "Port",
-            min_value=1024,
-            max_value=65535,
-            value=int(current_config.get("target_app_port", 8000)),
-            step=1,
-            key="cfg_target_port",
-        )
-        if target_port != current_config.get("target_app_port", 8000):
-            config_manager.set_target_app_port(target_port)
-            st.success(f"Port set to {target_port}")
-
-    with col_url:
-        current_url = current_config.get("target_url", f"http://127.0.0.1:{current_config.get('target_app_port', 8000)}")
-        target_url = st.text_input(
-            "Target URL",
-            value=current_url,
-            key="cfg_target_url",
-            help="Full URL to the application under test",
-        )
-        if target_url != current_url:
-            config_manager.set_target_url(target_url)
-            st.success(f"Target URL set to {target_url}")
-
-    col_html, col_fp = st.columns(2)
-
-    with col_html:
-        current_html = current_config.get("target_html_file", "")
-        target_html = st.text_input(
-            "HTML File (optional)",
-            value=current_html,
-            key="cfg_target_html",
-            placeholder="e.g., web.html, my_app/index.html",
-            help="Path to the HTML file relative to the demo directory",
-        )
-        if target_html != current_html:
-            config_manager.set_target_html_file(target_html)
-            st.success(f"HTML file set to {target_html}")
-
-    with col_fp:
-        active_fp = config_manager.get_active_fingerprint()
-        fp_display = os.path.basename(active_fp) if active_fp else "None"
+    if not apps:
         st.markdown(
-            f"**Active Fingerprint:** `{fp_display}`<br>"
-            f"<small>Switch profiles in Fingerprint Profiles section below.</small>",
+            theme.empty("No applications registered. Run: "
+                        "python cli.py register --app <id> --url <url>"),
+            unsafe_allow_html=True,
+        )
+    else:
+        app_ids = [a["app_id"] for a in apps]
+        cfg_app_id = st.selectbox(
+            "Application",
+            app_ids,
+            index=app_ids.index(active_id) if active_id in app_ids else 0,
+            key="cfg_app",
+            help="Registered under data/apps/. Independent of the sidebar scope, "
+                 "which only filters what the other tabs display.",
+        )
+        record = app_registry.load(cfg_app_id) or {}
+        fingerprints = load_json_file(record.get("fingerprint_path", ""), dict)
+        is_active = cfg_app_id == active_id
+
+        st.markdown(
+            theme.table(
+                [
+                    {"k": "Name", "v": esc(record.get("app_name") or "—")},
+                    {"k": "URL / file", "v": esc(record.get("base_url") or "—")},
+                    {"k": "Source file", "v": esc(record.get("source_path") or "— (not tracked)")},
+                    {"k": "Baseline", "v": (
+                        f"{len(fingerprints)} element(s), recorded "
+                        f"{esc(clock(record.get('baseline_recorded_at')) or 'never')}"
+                        if fingerprints else "not yet recorded")},
+                    {"k": "Fingerprint file", "v": esc(
+                        os.path.basename(record.get("fingerprint_path", "")) or "—")},
+                    {"k": "State", "v": theme.pill("active") if is_active
+                                        else theme.pill("warning")},
+                ],
+                [("k", "Setting"), ("v", "Value")],
+                aligns={"v": "mono"},
+            ),
             unsafe_allow_html=True,
         )
 
-    # Scan & Learn button
-    st.markdown("---")
-    col_btn1, col_btn2 = st.columns([2, 3])
+        if not is_active:
+            st.warning(
+                f"'{cfg_app_id}' is registered but not active — the engine is "
+                f"currently pointed at '{active_id or 'nothing'}'. Activate it "
+                f"below, or just run a test with selfheal.run(app=\"{cfg_app_id}\"), "
+                f"which activates it automatically."
+            )
 
-    with col_btn1:
-        if st.button("Serve HTML File & Learn", use_container_width=True):
-            if not target_html:
-                st.warning("Enter an HTML file name first (e.g., web.html)")
-            else:
-                html_path = os.path.join(config.BASE_DIR, target_html)
-                if not os.path.exists(html_path):
-                    st.error(f"File not found: {html_path}")
+        col_a1, col_a2, col_a3 = st.columns(3)
+
+        with col_a1:
+            if st.button("Set as active app", width="stretch",
+                         disabled=is_active):
+                if app_registry.activate(cfg_app_id):
+                    config_manager.sync_active_app()
+                    st.success(f"'{cfg_app_id}' is now the active application")
+                    st.rerun()
                 else:
-                    with st.spinner("Starting server and learning fingerprints..."):
-                        try:
-                            import subprocess
-                            import time
+                    st.error(f"Could not activate '{cfg_app_id}'")
 
-                            # Start HTTP server in background
-                            proc = subprocess.Popen(
-                                [sys.executable, "-m", "http.server", str(target_port)],
-                                cwd=config.BASE_DIR,
-                                stdout=subprocess.DEVNULL,
-                                stderr=subprocess.DEVNULL,
-                            )
-                            time.sleep(2)  # Wait for server to start
+        with col_a2:
+            if st.button("Re-learn baseline", width="stretch",
+                         help="Rescans the live page and rebuilds this app's "
+                              "baseline from scratch. Only ever do this against a "
+                              "known-good build."):
+                _cli(["learn", "--app", cfg_app_id, "--force"],
+                     "Rescanning the page and rebuilding the baseline...", timeout=180)
 
-                            from selenium import webdriver
-                            from selenium.webdriver.chrome.service import Service
-                            from webdriver_manager.chrome import ChromeDriverManager
-                            import glob
-                            import learning_mode
-                            import automation_wrapper
+        with col_a3:
+            if st.button("Run change-impact check", width="stretch",
+                         help="Compares the live page against the baseline without "
+                              "running the suite. Fills the Change impact tab."):
+                _cli(["check", "--app", cfg_app_id],
+                     "Comparing the live page against the baseline...", timeout=180)
 
-                            # Find ChromeDriver
-                            driver_paths = glob.glob(os.path.expanduser(
-                                "~/.wdm/drivers/chromedriver/*/*/chromedriver-win64/chromedriver.exe"
-                            ))
-                            if driver_paths:
-                                driver_path = driver_paths[-1]
-                            else:
-                                driver_path = ChromeDriverManager().install()
-
-                            options = webdriver.ChromeOptions()
-                            options.add_argument("--headless=new")
-                            options.add_argument("--no-sandbox")
-                            options.add_argument("--disable-dev-shm-usage")
-                            driver = webdriver.Chrome(service=Service(driver_path), options=options)
-
-                            try:
-                                learn_url = f"http://127.0.0.1:{target_port}/{target_html}"
-                                driver.get(learn_url)
-                                with automation_wrapper.suppressed():
-                                    count = learning_mode.ensure_fingerprints(driver, active_fp, force=True)
-                                st.success(f"✓ Captured {count} fingerprints from {target_html}")
-                            finally:
-                                driver.quit()
-                                proc.terminate()
-                                proc.wait()
-                        except Exception as e:
-                            st.error(f"Failed to learn fingerprints: {e}")
-                            import traceback
-                            st.code(traceback.format_exc())
-
-    with col_btn2:
-        st.markdown(
-            "<small>Starts a local server, opens the HTML file in Chrome, "
-            "and captures Golden Fingerprints for all interactive elements.</small>",
-            unsafe_allow_html=True,
-        )
-
-    # Quick action buttons
+    # ------------------------------------------------------------------
+    # Quick actions
+    # ------------------------------------------------------------------
     st.markdown("---")
     st.markdown(
         theme.section(
-            "Quick Actions",
-            "Run the full demo or simulate infrastructure stress to populate all dashboard tabs.",
+            "Quick actions",
+            "Populate or clear the dashboard without leaving it. Each button runs "
+            "the same script the demo guide runs from the terminal.",
         ),
         unsafe_allow_html=True,
     )
 
-    col_q1, col_q2, col_q3 = st.columns(3)
+    col_q1, col_q2 = st.columns(2)
 
     with col_q1:
-        if st.button("Run Full Demo", type="primary", use_container_width=True):
-            with st.spinner("Running full demo (learning + healing)..."):
-                try:
-                    import subprocess
-                    result = subprocess.run(
-                        [sys.executable, os.path.join(config.BASE_DIR, "demo.py")],
-                        cwd=config.BASE_DIR,
-                        capture_output=True, text=True, timeout=300,
-                    )
-                    if result.stdout:
-                        st.code(result.stdout[-3000:], language="text")
-                    if result.returncode == 0:
-                        st.success("Demo completed successfully!")
-                    else:
-                        if result.stderr:
-                            st.error(result.stderr[-1000:])
-                except subprocess.TimeoutExpired:
-                    st.error("Demo timed out after 300 seconds")
-                except Exception as e:
-                    st.error(f"Demo failed: {e}")
+        if st.button("Simulate infrastructure stress", width="stretch",
+                     help="Writes synthetic metric snapshots and runs the real "
+                          "infrastructure healer over them. Fills the "
+                          "Infrastructure tab."):
+            _script("simulate_infra_heal.py", ["combined", "--no-restart"],
+                    "Simulating disk, error-rate and service-health stress...",
+                    timeout=60)
 
     with col_q2:
-        if st.button("Simulate Infra Stress", use_container_width=True):
-            with st.spinner("Simulating infrastructure stress conditions..."):
-                try:
-                    import subprocess
-                    result = subprocess.run(
-                        [sys.executable, os.path.join(config.BASE_DIR, "simulate_infra_heal.py"), "all"],
-                        cwd=config.BASE_DIR,
-                        capture_output=True, text=True, timeout=30,
-                    )
-                    if result.stdout:
-                        st.code(result.stdout, language="text")
-                    st.success("Infrastructure stress simulated! Check Infrastructure tab.")
-                except Exception as e:
-                    st.error(f"Failed: {e}")
+        if st.button("Reset all data", width="stretch",
+                     help="Clears every bucket, run, test, app and baseline. "
+                          "Your HTML and test scripts are untouched."):
+            _script("reset_all.py", [], "Clearing telemetry, runs and baselines...",
+                    timeout=30)
 
-    with col_q3:
-        if st.button("Reset All Data", use_container_width=True):
-            with st.spinner("Resetting all data..."):
-                try:
-                    import subprocess
-                    result = subprocess.run(
-                        [sys.executable, os.path.join(config.BASE_DIR, "reset_demo.py")],
-                        cwd=config.BASE_DIR,
-                        capture_output=True, text=True, timeout=10,
-                    )
-                    st.success("All data reset. Dashboard will refresh empty.")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Reset failed: {e}")
-
-    # Current target summary
-    st.markdown("---")
-    summary_items = []
-    if target_url:
-        summary_items.append(f"URL: **{target_url}**")
-    if target_html:
-        summary_items.append(f"HTML: **{target_html}**")
-    summary_items.append(f"Port: **{target_port}**")
-    summary_items.append(f"Fingerprint: **{fp_display}**")
-    st.markdown(" | ".join(summary_items))
     st.markdown("---")
 
-    # Run Tests Section
+    # ------------------------------------------------------------------
+    # Run tests
+    #
+    # The candidates come from the test registry, which records the script
+    # behind every test that has actually run, plus any source-heal targets you
+    # added by hand. The previous version listed only the latter and injected
+    # MY_APP_URL / MY_APP_HTML, which no test script has ever read -- a test
+    # gets its URL from the app it names in selfheal.run(app=...).
+    # ------------------------------------------------------------------
     st.markdown(
         theme.section(
-            "Run Tests",
-            "Execute your test scripts directly from the dashboard. The system will auto-heal broken locators.",
+            "Run tests",
+            "Execute a registered test script. It heals exactly as it would from "
+            "the terminal — the dashboard adds nothing to the run.",
         ),
         unsafe_allow_html=True,
     )
 
-    current_targets = current_config["source_heal_targets"]
-    if not current_targets:
-        st.warning("No test scripts configured. Add test files in 'Source Heal Target Files' section below.")
-    else:
-        test_options = {os.path.basename(t): t for t in current_targets}
-        selected_test = st.selectbox(
-            "Select test script to run",
-            options=list(test_options.keys()),
-            key="run_test_select",
+    test_options = {}
+    for record in test_registry.list_tests(cfg_app_id) if cfg_app_id else []:
+        script_path = record.get("script")
+        if script_path and os.path.exists(script_path):
+            test_options[f"{record['test_id']}  ({os.path.basename(script_path)})"] = script_path
+    for target in current_config["source_heal_targets"]:
+        if os.path.exists(target) and target not in test_options.values():
+            test_options[f"{os.path.basename(target)}  (source-heal target)"] = target
+
+    if not test_options:
+        st.markdown(
+            theme.empty("No runnable test script known for this application. A test "
+                        "registers itself the first time it runs from the terminal."),
+            unsafe_allow_html=True,
         )
-
-        if st.button("Run Test", use_container_width=True, type="primary"):
-            if selected_test:
-                test_path = test_options[selected_test]
-                with st.spinner(f"Running {selected_test}..."):
-                    try:
-                        import subprocess
-                        env = os.environ.copy()
-                        env["MY_APP_URL"] = target_url or f"http://127.0.0.1:{target_port}"
-                        if target_html:
-                            env["MY_APP_HTML"] = target_html
-
-                        result = subprocess.run(
-                            [sys.executable, test_path],
-                            cwd=config.BASE_DIR,
-                            env=env,
-                            capture_output=True,
-                            text=True,
-                            timeout=120,
-                        )
-
-                        st.markdown("**Test Output:**")
-                        if result.stdout:
-                            st.code(result.stdout, language="text")
-                        if result.stderr:
-                            st.error(result.stderr)
-
-                        if result.returncode == 0:
-                            st.success("Test completed successfully!")
-                        else:
-                            st.error(f"Test failed with exit code {result.returncode}")
-
-                    except subprocess.TimeoutExpired:
-                        st.error("Test timed out after 120 seconds")
-                    except Exception as e:
-                        st.error(f"Failed to run test: {e}")
-                        import traceback
-                        st.code(traceback.format_exc())
+    else:
+        chosen = st.selectbox("Test script", list(test_options.keys()), key="run_test_select")
+        if st.button("Run test", width="stretch", type="primary"):
+            path = test_options[chosen]
+            _script(os.path.relpath(path, config.BASE_DIR), [],
+                    f"Running {os.path.basename(path)}...", timeout=180)
 
     st.markdown("---")
 
@@ -1480,7 +1450,7 @@ with tab_config:
     st.markdown("**Add target file:**")
 
     # File scanner - scan for all .py files in demo directory
-    if st.button("🔍 Scan for test files", use_container_width=True):
+    if st.button("🔍 Scan for test files", width="stretch"):
         scanned = config_manager.scan_test_files()
         if scanned:
             st.session_state["scanned_files"] = scanned
@@ -1500,7 +1470,7 @@ with tab_config:
                 format_func=lambda x: "Choose a file..." if x == "" else x,
                 key="select_test_file",
             )
-            if selected_file and st.button("➕ Add selected file", use_container_width=True):
+            if selected_file and st.button("➕ Add selected file", width="stretch"):
                 full_path = os.path.join(config.BASE_DIR, selected_file)
                 if config_manager.add_source_heal_target(full_path):
                     st.success(f"✓ Added: {selected_file}")
@@ -1520,7 +1490,7 @@ with tab_config:
         help="Relative to demo directory, or absolute path",
         key="manual_test_path",
     )
-    if manual_path and st.button("➕ Add manual path", use_container_width=True):
+    if manual_path and st.button("➕ Add manual path", width="stretch"):
         # Check if it's an absolute path or relative
         if os.path.isabs(manual_path):
             full_path = manual_path
@@ -1583,16 +1553,17 @@ with tab_config:
     # Fingerprint File Management
     st.markdown(
         theme.section(
-            "Fingerprint Profiles",
-            "Each application gets its own fingerprint baseline. Switch between apps, "
-            "create new profiles, or delete unused ones. The active profile is used for "
-            "all healing operations.",
+            "Fingerprint profiles",
+            "One baseline per application, named after its app id. Which one is "
+            "active follows the registry above — a profile is not something you "
+            "point the engine at independently of the app it belongs to.",
         ),
         unsafe_allow_html=True,
     )
 
     active_fp = config_manager.get_active_fingerprint()
     all_fps = config_manager.get_fingerprint_files()
+    registered_ids = {a["app_id"] for a in apps}
 
     if active_fp:
         active_name = os.path.basename(active_fp).replace('_fingerprints.json', '').replace('_fp.json', '')
@@ -1603,22 +1574,30 @@ with tab_config:
         st.markdown("**Available profiles:**")
         for fp in all_fps:
             col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
+            # A profile file is named <app_id>_fingerprints.json, so the app it
+            # belongs to is recoverable. One with no registered app is an orphan
+            # left by a deleted registration -- deletable, but not activatable.
+            owner = fp['name'] if fp['name'] in registered_ids else None
             with col1:
                 name_display = f"**{fp['name']}**" if fp['is_active'] else fp['name']
-                st.markdown(name_display)
+                if not owner:
+                    name_display += "  <small>(orphaned — no registered app)</small>"
+                st.markdown(name_display, unsafe_allow_html=True)
             with col2:
                 count_text = f"{fp['element_count']} elements" if fp['element_count'] >= 0 else "error"
                 st.markdown(f"<small>{count_text}</small>", unsafe_allow_html=True)
             with col3:
                 if fp['is_active']:
                     st.markdown(theme.pill("active"))
-                else:
-                    if st.button("Switch", key=f"switch_fp_{fp['filename']}"):
-                        if config_manager.set_active_fingerprint(fp['path']):
-                            st.success(f"Switched to {fp['name']}")
+                elif owner:
+                    if st.button("Activate app", key=f"switch_fp_{fp['filename']}",
+                                 help=f"Makes '{owner}' the active application"):
+                        if app_registry.activate(owner):
+                            config_manager.sync_active_app()
+                            st.success(f"'{owner}' is now the active application")
                             st.rerun()
                         else:
-                            st.error("Failed to switch fingerprint file")
+                            st.error(f"Could not activate '{owner}'")
             with col4:
                 if not fp['is_active']:
                     if st.button("Delete", key=f"delete_fp_{fp['filename']}"):
@@ -1651,23 +1630,18 @@ with tab_config:
             else:
                 st.warning("Could not load fingerprint preview")
     else:
-        st.info("No fingerprint files found. Create one below or run Learning Mode on an app.")
+        st.info("No baselines recorded yet. Register an app, then run its test "
+                "once against a working page — a passing run records the baseline.")
 
-    # Create new fingerprint file
-    st.markdown("**Create new profile for a different app:**")
-    new_app_name = st.text_input(
-        "App name",
-        placeholder="e.g., ecommerce, banking, social_media",
-        key="new_fp_name",
+    # A profile is created by registering an app, not on its own: an empty file
+    # with no app behind it is an orphan the engine can never activate.
+    st.markdown(
+        "<small>New profiles are created by registering an application — "
+        "<code>python cli.py register --app &lt;id&gt; --url &lt;url&gt;</code> — and "
+        "populated by the first passing run, or by "
+        "<code>python cli.py learn --app &lt;id&gt;</code>.</small>",
+        unsafe_allow_html=True,
     )
-    if new_app_name and st.button("Create profile", key="create_fp_btn"):
-        new_path = config_manager.create_fingerprint_file(new_app_name)
-        if new_path:
-            st.success(f"Created profile: {os.path.basename(new_path)}")
-            st.info("Run Learning Mode on the app to populate fingerprints.")
-            st.rerun()
-        else:
-            st.error("Failed to create profile. Check the app name.")
 
     # Reset to defaults
     st.markdown("---")
@@ -1681,7 +1655,7 @@ with tab_config:
 
     col_reset1, col_reset2 = st.columns([1, 3])
     with col_reset1:
-        if st.button("Reset to Defaults", type="secondary", use_container_width=True):
+        if st.button("Reset to Defaults", type="secondary", width="stretch"):
             config_manager.reset_to_defaults()
             config_manager.apply_overrides()
             st.success("Configuration restored to defaults")
@@ -1692,6 +1666,15 @@ with tab_config:
             "all settings to their built-in defaults. Requires page refresh.</small>",
             unsafe_allow_html=True,
         )
+
+# A command's output has to survive long enough to be read. The 3s auto-refresh
+# below would otherwise wipe it before the page finished painting, which made
+# the Quick action buttons look like they had done nothing. Freeze this cycle
+# instead; the next widget interaction resumes normal refreshing.
+if st.session_state.pop("cmd_output_pending", False):
+    st.caption("Auto-refresh paused so the output above stays readable. "
+               "Press R, or use any control, to resume.")
+    st.stop()
 
 # Auto-refresh last, so the whole page paints before we pause.
 if os.environ.get("DASH_NO_REFRESH") != "1":

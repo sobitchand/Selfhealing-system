@@ -20,12 +20,18 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 # TARGET_URL; the standalone scenario scripts read it from here.
 TARGET_APP_PORT = int(os.environ.get("TARGET_APP_PORT", "8000"))
 TARGET_URL = os.environ.get("TARGET_URL", f"http://127.0.0.1:{TARGET_APP_PORT}")
-TARGET_HTML_FILE = os.environ.get("TARGET_HTML_FILE", "")  # e.g., "web.html"
+TARGET_HTML_FILE = os.environ.get("TARGET_HTML_FILE", "")  # e.g., "examples/bank/index.html"
 
 # Absolute paths for data assets
 FINGERPRINT_DIR = os.path.join(DATA_DIR, "fingerprints")
-POMODORO_FINGERPRINTS_PATH = os.path.join(DATA_DIR, "pomodoro_3d_fingerprints.json")
-ACTIVE_FINGERPRINT_PATH = POMODORO_FINGERPRINTS_PATH
+# The baseline the engine reads and writes. app_registry.activate() repoints this
+# at data/fingerprints/<app_id>_fingerprints.json, so it is only a placeholder
+# until an application is activated -- it must not name any particular demo, or a
+# fresh checkout points at a file that was never created.
+DEFAULT_FINGERPRINTS_PATH = os.path.join(FINGERPRINT_DIR, "default_fingerprints.json")
+ACTIVE_FINGERPRINT_PATH = DEFAULT_FINGERPRINTS_PATH
+# Legacy alias: the pre-registry entry points still import this name.
+POMODORO_FINGERPRINTS_PATH = ACTIVE_FINGERPRINT_PATH
 # Which registered application the framework is currently operating on. Set by
 # app_registry.activate(); empty until an app is registered (see app_registry).
 ACTIVE_APP_ID = ""

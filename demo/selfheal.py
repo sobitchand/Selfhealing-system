@@ -23,6 +23,7 @@ changes -- which is the point: the QA script under test is the control, and the
 only variable is whether this layer is installed.
 """
 
+import json
 import os
 from contextlib import contextmanager
 
@@ -253,7 +254,16 @@ def run(app, test=None, learn=True, heal_find_elements=None):
         if learn:
             _wrapper.disable_learning(persist=passed)
             if passed:
-                app_registry.mark_baseline_recorded(app)
+                # Count what was actually persisted. Without it the registry
+                # records only a timestamp, and `cli.py apps` reports the
+                # baseline as "None element(s)" for every app learned this way.
+                count = None
+                try:
+                    with open(config.ACTIVE_FINGERPRINT_PATH, "r", encoding="utf-8") as f:
+                        count = len(json.load(f))
+                except Exception:
+                    pass
+                app_registry.mark_baseline_recorded(app, count)
 
         run_context.finish("passed" if passed else "failed")
         stats = session_stats()
