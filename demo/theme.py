@@ -309,9 +309,15 @@ table.tbl td.mono {{
    a 3s auto-refresh it is on screen almost permanently, which reads as "the
    page is stuck loading" rather than "the data is live". Hidden, along with the
    rest of the framework furniture, so the page looks like a site and not like a
-   Streamlit app. */
+   Streamlit app.
+
+   stToolbar is deliberately NOT in this list. Streamlit renders the sidebar
+   expand button inside it, so display:none there removes the only control that
+   brings a collapsed sidebar back -- and because the collapsed state persists in
+   localStorage, the sidebar then cannot be recovered without clearing site data.
+   Hide the toolbar's CONTENTS instead and keep the toolbar itself in the layout
+   purely as the host for that button. */
 [data-testid="stStatusWidget"],
-[data-testid="stToolbar"],
 [data-testid="stDecoration"],
 [data-testid="stToolbarActions"],
 .stDeployButton,
@@ -319,6 +325,22 @@ table.tbl td.mono {{
 footer {{
     display: none !important;
     visibility: hidden !important;
+}}
+
+[data-testid="stToolbar"] {{
+    display: flex !important;
+    visibility: visible !important;
+    background: transparent !important;
+}}
+
+/* The collapse / expand controls must stay clickable at all times. */
+[data-testid="stSidebarCollapseButton"],
+[data-testid="stSidebarCollapseButton"] button,
+[data-testid="stExpandSidebarButton"] {{
+    visibility: visible !important;
+    opacity: 1 !important;
+    display: flex !important;
+    pointer-events: auto !important;
 }}
 
 /* ---- config action cards ---- */

@@ -20,7 +20,7 @@ The demo requires **3 components running simultaneously** in separate terminals:
 | Component | Script | Port | Purpose |
 |-----------|--------|------|---------|
 | Dashboard | `dashboard.py` | 8501 | Streamlit monitoring UI |
-| Target App | `demo_target_app.py` | 8000 | Pomodoro app (the app under test) |
+| Target App | `demo_target_app.py` | 8000 | NovaBank app (the app under test) |
 | Selenium Test | `run_selenium_heal.py` | — | Triggers healing by using broken locators |
 
 The **Collector Server** (`collector_server.py`) is embedded in the target app — no separate launch needed.

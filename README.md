@@ -39,7 +39,7 @@ health and fires rule-based recovery actions (log rotation, worker reload, etc.)
 ## 2. Architecture (5 layers, mapped to the proposal §3.1.2)
 
 ```
-Request & Application Layer   demo_target_app.py      (Pomodoro AUT + UI + backend)
+Request & Application Layer   demo_target_app.py      (NovaBank AUT + UI + backend)
 Monitoring Layer              selfhealing/metrics_monitor.py  (traffic/disk/health/error)
 Decision Layer                healing_engine.py       (rule engine + R1-R4 scoring + thresholds)
 Healing & Execution Layer     automation_wrapper.py   (Selenium interceptor, reroute)
@@ -276,7 +276,7 @@ demo/
 │   ├── runner.py             #   pytest-free runner (--heal / --headed)
 │   └── driver_factory.py     #   Chrome + Firefox factory (cross-browser support)
 │
-├── demo_target_app.py        # Pomodoro AUT + live metrics thread + JS agent host
+├── demo_target_app.py        # NovaBank AUT: serves examples/bank original vs refactored
 ├── selfhealing_agent.js      # in-browser agent (JS errors, image/selector healing)
 ├── collector_server.py       # HTTP sink for the browser agent (passive path)
 │
@@ -293,7 +293,6 @@ demo/
 │
 ├── run_selenium_heal.py      # REAL end-to-end Selenium self-heal entry point
 ├── demo_show.py              # one-click narrated demo (before/after source diff)
-├── test_ui_healing.py        # fast canned UI-heal scenario (no browser)
 ├── simulate_infra_heal.py    # canned infrastructure-heal scenario
 │
 ├── benchmark.py              # 50+ scenario benchmark with success rate, heal time, confidence histogram

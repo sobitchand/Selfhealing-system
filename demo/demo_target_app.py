@@ -1,11 +1,15 @@
 """
-Demo target application — serves web_demo.html or web_demo_broken.html.
+Demo target application — serves the NovaBank example app.
 
     python demo_target_app.py [port]
 
-Query parameter ?break=refactor serves the broken version (renamed IDs/classes).
-Without it, serves the clean version. The healing system learns from the clean
-version, then the broken version causes all locators to fail.
+Serves examples/bank/index_v1.html (the ORIGINAL page) at /, and
+examples/bank/index.html (the REFACTORED page, where the front-end team renamed
+ids, classes and link text) when ?break=refactor is present.
+
+The healing system learns golden fingerprints from the original version; the
+refactored version then breaks every locator the test depends on, which is the
+failure the framework exists to absorb.
 """
 
 import os
@@ -13,17 +17,21 @@ import sys
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+APP_DIR = os.path.join(BASE_DIR, "examples", "bank")
 DEFAULT_PORT = int(os.environ.get("TARGET_APP_PORT", "8000"))
+
+CLEAN_PAGE = "index_v1.html"
+BROKEN_PAGE = "index.html"
 
 
 class DemoHandler(SimpleHTTPRequestHandler):
-    """Serve web_demo.html or web_demo_broken.html based on ?break=refactor."""
+    """Serve the original or refactored NovaBank page based on ?break=refactor."""
 
     def do_GET(self):
         if self.path == "/" or self.path.startswith("/?"):
             break_mode = "refactor" in self.path
-            filename = "web_demo_broken.html" if break_mode else "web_demo.html"
-            filepath = os.path.join(BASE_DIR, filename)
+            filename = BROKEN_PAGE if break_mode else CLEAN_PAGE
+            filepath = os.path.join(APP_DIR, filename)
             if os.path.exists(filepath):
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -41,11 +49,11 @@ class DemoHandler(SimpleHTTPRequestHandler):
 
 def main():
     port = int(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_PORT
-    os.chdir(BASE_DIR)
+    os.chdir(APP_DIR)
     server = HTTPServer(("127.0.0.1", port), DemoHandler)
-    print(f"Demo target app running on http://127.0.0.1:{port}")
-    print(f"  Clean:  http://127.0.0.1:{port}/")
-    print(f"  Broken: http://127.0.0.1:{port}/?break=refactor")
+    print(f"Demo target app (NovaBank) running on http://127.0.0.1:{port}")
+    print(f"  Original:   http://127.0.0.1:{port}/")
+    print(f"  Refactored: http://127.0.0.1:{port}/?break=refactor")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

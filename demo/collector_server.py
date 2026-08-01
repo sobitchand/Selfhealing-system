@@ -3,7 +3,8 @@ Collector server — HTTP sink for in-browser agent events.
 
     python collector_server.py
 
-Listens on :8766 for POST requests from the browser UI agent (web.html).
+Listens on :8766 for POST requests from the in-page browser UI agent
+(selfhealing_agent.js, injected into the target application).
 Routes each event through handlers.handle_passive_event() which persists to
 the appropriate bucket (alerts, ui_heals, browser_events).
 

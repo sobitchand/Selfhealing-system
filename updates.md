@@ -79,7 +79,6 @@ Run all of these from inside `demo/`.
 | `python demo_show.py` | narrated source write-back, with before/after diff |
 | `python demo_show.py --reset` | re-arm the broken locator for another pass |
 | `python simulate_infra_heal.py` | canned infrastructure recovery |
-| `python test_ui_healing.py` | canned UI heal, no browser needed |
 | `python reset_demo.py` | **run before presenting** — see §7 |
 | `python benchmark.py` | **benchmark** — 50+ scenarios, success rate, heal time, confidence histogram |
 | `python run_cross_browser_benchmark.py` | **cross-browser** — benchmark on Chrome + Firefox, compare results |

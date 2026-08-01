@@ -46,7 +46,7 @@ You are a specialist in managing the golden fingerprint baseline for the self-he
 4. Warn that heals targeting this element will now halt at <20% confidence until a new fingerprint is captured
 
 ### Trigger Full Re-Learning
-1. Verify the Pomodoro target app is running (`demo/demo_target_app.py` on port 8000)
+1. Verify the NovaBank target app is running (`demo/demo_target_app.py` on port 8000)
 2. Delete or empty `demo/data/pomodoro_3d_fingerprints.json` (set content to `[]`)
 3. Instruct user to run `python demo/run_selenium_heal.py` — Learning Mode activates automatically
 4. Explain that the system will scan all interactive elements and rebuild the baseline
