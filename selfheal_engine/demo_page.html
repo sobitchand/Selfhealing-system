@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Automation Test Page - Buttons</title>
+  <style>
+    /* Basic Page Styling */
+    body {
+      font-family: Arial, sans-serif;
+      padding: 30px;
+      background-color: #f4f6f8;
+    }
+
+    .container {
+      max-width: 600px;
+      background: #ffffff;
+      padding: 20px 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      color: #333;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    /* Common Button Class */
+    .btn {
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: bold;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    /* Class Variants for Styling */
+    .btn-primary {
+      background-color: #007bff;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: #0056b3;
+    }
+
+    .btn-secondary {
+      background-color: #6c757d;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background-color: #545b62;
+    }
+
+    /* Output log styling */
+    #status-log {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #e9ecef;
+      border-radius: 4px;
+      font-size: 14px;
+      color: #495057;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container" id="main-card">
+    <h2>Automation Testing Target Page</h2>
+    <p>Use the buttons below to test element targeting via ID, Class, and XPath.</p>
+
+    <!-- Button Section -->
+    <div class="button-group" id="action-section">
+      <!-- Target 1: Located easily by ID -->
+      <button id="submit-btn" class="btn btn-primary" onclick="logAction('Submit Button (by ID) clicked')">
+        Submit
+      </button>
+
+      <!-- Target 2: Located by Class or Text -->
+      <button id="cancel-btn" class="btn btn-secondary" onclick="logAction('Cancel Button (by Class) clicked')">
+        Cancel
+      </button>
+    </div>
+
+    <!-- Output message for verifying interaction -->
+    <div id="status-log">Status: Awaiting action...</div>
+  </div>
+
+  <script>
+    function logAction(message) {
+      document.getElementById('status-log').innerText = 'Status: ' + message;
+    }
+  </script>
+
+</body>
+</html>

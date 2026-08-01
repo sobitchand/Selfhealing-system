@@ -1,0 +1,10 @@
+{
+  "target_app_port": 8000,
+  "target_url": "http://127.0.0.1:8000/demo_page.html",
+  "target_html_file": "demo_page.html",
+  "active_fingerprint_path": "C:\\Users\\Acer\\OneDrive\\Documents\\Desktop\\self_healing\\Selfhealing-system\\selfheal_engine\\data\\fingerprints\\baseline_fingerprints.json",
+  "source_heal_targets": [
+    "C:\\Users\\Acer\\OneDrive\\Documents\\Desktop\\self_healing\\Selfhealing-system\\selfheal_engine\\demo_test.py"
+  ],
+  "approval_mode_enabled": true
+}

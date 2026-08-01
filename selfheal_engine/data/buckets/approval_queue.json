@@ -1,0 +1,52 @@
+[
+  {
+    "timestamp": "2026-08-01T11:30:31.565720+00:00",
+    "heal_id": "heal_20260801_113031_0",
+    "script": "expected_conditions.py",
+    "confidence": 100.0,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-08-01T11:30:33.971042+00:00",
+    "heal_id": "heal_20260801_113033_1",
+    "script": "demo_test.py",
+    "confidence": 100.0,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-08-01T11:31:00.260299+00:00",
+    "heal_id": "heal_20260801_113033_1",
+    "script": "demo_test.py",
+    "confidence": 100.0,
+    "status": "approved",
+    "pr_url": null
+  },
+  {
+    "timestamp": "2026-08-01T11:33:48.317746+00:00",
+    "heal_id": "heal_20260801_113348_0",
+    "script": "expected_conditions.py",
+    "confidence": 100.0,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-08-01T11:33:50.926151+00:00",
+    "heal_id": "heal_20260801_113350_1",
+    "script": "demo_test.py",
+    "confidence": 100.0,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-08-01T11:42:03.706815+00:00",
+    "heal_id": "heal_20260801_114203_2",
+    "script": "expected_conditions.py",
+    "confidence": 100.0,
+    "status": "queued"
+  },
+  {
+    "timestamp": "2026-08-01T11:42:06.206697+00:00",
+    "heal_id": "heal_20260801_114206_3",
+    "script": "demo_test.py",
+    "confidence": 100.0,
+    "status": "queued"
+  }
+]

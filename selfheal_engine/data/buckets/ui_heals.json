@@ -1,0 +1,128 @@
+[
+  {
+    "timestamp": "2026-08-01T11:30:31.558729+00:00",
+    "broken_selector": "id='submit-btn'",
+    "recovered_selector": "#sum-btn",
+    "healed_locator": "#sum-btn",
+    "confidence_score": 100.0,
+    "policy": "AUTOMATIC HEAL",
+    "status": "pending_approval",
+    "reason": "Tag changed from <button> to <button> (\u221225%); visible text matched; DOM position unchanged; CSS class matched; neighbouring elements matched.",
+    "recommendation": "Update the test script to use the repaired locator.",
+    "margin_over_second": 55.87,
+    "details": {
+      "component_scores": {
+        "R1_inner_text_40": 100.0,
+        "R2_xpath_pattern_30": 100.0,
+        "R3_css_class_20": 100.0,
+        "R4_neighbors_10": 100.0
+      }
+    },
+    "heal_id": "heal_20260801_113031_0"
+  },
+  {
+    "timestamp": "2026-08-01T11:30:33.936404+00:00",
+    "broken_selector": "xpath='//button[@id='submit-btn']'",
+    "recovered_selector": "#sum-btn",
+    "healed_locator": "#sum-btn",
+    "confidence_score": 100.0,
+    "policy": "AUTOMATIC HEAL",
+    "status": "pending_approval",
+    "reason": "Tag changed from <button> to <button> (\u221225%); visible text matched; DOM position unchanged; CSS class matched; neighbouring elements matched.",
+    "recommendation": "Update the test script to use the repaired locator.",
+    "margin_over_second": 55.87,
+    "details": {
+      "component_scores": {
+        "R1_inner_text_40": 100.0,
+        "R2_xpath_pattern_30": 100.0,
+        "R3_css_class_20": 100.0,
+        "R4_neighbors_10": 100.0
+      }
+    },
+    "heal_id": "heal_20260801_113033_1"
+  },
+  {
+    "timestamp": "2026-08-01T11:33:48.306717+00:00",
+    "broken_selector": "id='sum-btn'",
+    "recovered_selector": "#submit-btn",
+    "healed_locator": "#submit-btn",
+    "confidence_score": 100.0,
+    "policy": "AUTOMATIC HEAL",
+    "status": "pending_approval",
+    "reason": "Tag changed from <button> to <button> (\u221225%); visible text matched; DOM position unchanged; CSS class matched; neighbouring elements matched.",
+    "recommendation": "Update the test script to use the repaired locator.",
+    "margin_over_second": 55.87,
+    "details": {
+      "component_scores": {
+        "R1_inner_text_40": 100.0,
+        "R2_xpath_pattern_30": 100.0,
+        "R3_css_class_20": 100.0,
+        "R4_neighbors_10": 100.0
+      }
+    },
+    "heal_id": "heal_20260801_113348_0"
+  },
+  {
+    "timestamp": "2026-08-01T11:33:50.904149+00:00",
+    "broken_selector": "xpath='//button[@id='sum-btn']'",
+    "recovered_selector": "#submit-btn",
+    "healed_locator": "#submit-btn",
+    "confidence_score": 100.0,
+    "policy": "AUTOMATIC HEAL",
+    "status": "pending_approval",
+    "reason": "Tag changed from <button> to <button> (\u221225%); visible text matched; DOM position unchanged; CSS class matched; neighbouring elements matched.",
+    "recommendation": "Update the test script to use the repaired locator.",
+    "margin_over_second": 55.87,
+    "details": {
+      "component_scores": {
+        "R1_inner_text_40": 100.0,
+        "R2_xpath_pattern_30": 100.0,
+        "R3_css_class_20": 100.0,
+        "R4_neighbors_10": 100.0
+      }
+    },
+    "heal_id": "heal_20260801_113350_1"
+  },
+  {
+    "timestamp": "2026-08-01T11:42:03.680812+00:00",
+    "broken_selector": "id='sum-btn'",
+    "recovered_selector": "#submit-btn",
+    "healed_locator": "#submit-btn",
+    "confidence_score": 100.0,
+    "policy": "AUTOMATIC HEAL",
+    "status": "pending_approval",
+    "reason": "Tag changed from <button> to <button> (\u221225%); visible text matched; DOM position unchanged; CSS class matched; neighbouring elements matched.",
+    "recommendation": "Update the test script to use the repaired locator.",
+    "margin_over_second": 55.87,
+    "details": {
+      "component_scores": {
+        "R1_inner_text_40": 100.0,
+        "R2_xpath_pattern_30": 100.0,
+        "R3_css_class_20": 100.0,
+        "R4_neighbors_10": 100.0
+      }
+    },
+    "heal_id": "heal_20260801_114203_2"
+  },
+  {
+    "timestamp": "2026-08-01T11:42:06.170879+00:00",
+    "broken_selector": "xpath='//button[@id='sum-btn']'",
+    "recovered_selector": "#submit-btn",
+    "healed_locator": "#submit-btn",
+    "confidence_score": 100.0,
+    "policy": "AUTOMATIC HEAL",
+    "status": "pending_approval",
+    "reason": "Tag changed from <button> to <button> (\u221225%); visible text matched; DOM position unchanged; CSS class matched; neighbouring elements matched.",
+    "recommendation": "Update the test script to use the repaired locator.",
+    "margin_over_second": 55.87,
+    "details": {
+      "component_scores": {
+        "R1_inner_text_40": 100.0,
+        "R2_xpath_pattern_30": 100.0,
+        "R3_css_class_20": 100.0,
+        "R4_neighbors_10": 100.0
+      }
+    },
+    "heal_id": "heal_20260801_114206_3"
+  }
+]

@@ -1,0 +1,74 @@
+[
+  {
+    "heal_id": "heal_20260801_113348_0",
+    "timestamp": "2026-08-01T11:33:48.317746+00:00",
+    "script_path": "C:\\Users\\Acer\\AppData\\Local\\Packages\\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\\LocalCache\\local-packages\\Python311\\site-packages\\selenium\\webdriver\\support\\expected_conditions.py",
+    "backup_path": "C:\\Users\\Acer\\OneDrive\\Documents\\Desktop\\self_healing\\Selfhealing-system\\selfheal_engine\\data\\backups\\expected_conditions_20260801_113348.py",
+    "old_locator": "sum-btn",
+    "new_locator": "submit-btn",
+    "confidence": 100.0,
+    "metrics": {
+      "R1_inner_text_40": 100.0,
+      "R2_xpath_pattern_30": 100.0,
+      "R3_css_class_20": 100.0,
+      "R4_neighbors_10": 100.0
+    },
+    "line_number": 518,
+    "status": "pending",
+    "diff": ""
+  },
+  {
+    "heal_id": "heal_20260801_113350_1",
+    "timestamp": "2026-08-01T11:33:50.926151+00:00",
+    "script_path": "C:\\Users\\Acer\\OneDrive\\Documents\\Desktop\\self_healing\\Selfhealing-system\\selfheal_engine\\demo_test.py",
+    "backup_path": "C:\\Users\\Acer\\OneDrive\\Documents\\Desktop\\self_healing\\Selfhealing-system\\selfheal_engine\\data\\backups\\demo_test_20260801_113350.py",
+    "old_locator": "sum-btn",
+    "new_locator": "submit-btn",
+    "confidence": 100.0,
+    "metrics": {
+      "R1_inner_text_40": 100.0,
+      "R2_xpath_pattern_30": 100.0,
+      "R3_css_class_20": 100.0,
+      "R4_neighbors_10": 100.0
+    },
+    "line_number": 62,
+    "status": "pending",
+    "diff": "--- demo_test.py (before)+++ demo_test.py (after)@@ -2,9 +2,9 @@ QA Test Script - Self-Healing Selenium Framework Demo\n ======================================================\n Demonstrates four element-location strategies:\n-  1. By ID            -> sum-btn\n+  1. By ID            -> submit-btn\n   2. By CSS Selector  -> button.btn-secondary\n-  3. By XPath (@id)   -> //button[@id='sum-btn']\n+  3. By XPath (@id)   -> //button[@id='submit-btn']\n   4. By XPath (text)  -> //button[normalize-space()='Cancel']\n \n When the page is intact, all four pass without healing.\n@@ -39,7 +39,7 @@     wait = WebDriverWait(driver, 10)\n \n     # \u2500\u2500 TEST 1: Submit button via ID \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n-    submit_btn = wait.until(EC.element_to_be_clickable((By.ID, \"sum-btn\")))\n+    submit_btn = wait.until(EC.element_to_be_clickable((By.ID, \"submit-btn\")))\n     submit_btn.click()\n     print(\"[PASS] Test 1 - Submit button located by ID\")\n \n@@ -59,7 +59,7 @@     time.sleep(1)\n \n     # \u2500\u2500 TEST 3: Submit button via Relative XPath \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n-    submit_btn = driver.find_element(By.XPATH, \"//button[@id='sum-btn']\")\n+    submit_btn = driver.find_element(By.XPATH, \"//button[@id='submit-btn']\")\n     submit_btn.click()\n     print(\"[PASS] Test 3 - Submit button located by XPath (@id)\")\n     time.sleep(1)\n"
+  },
+  {
+    "heal_id": "heal_20260801_114203_2",
+    "timestamp": "2026-08-01T11:42:03.706815+00:00",
+    "script_path": "C:\\Users\\Acer\\AppData\\Local\\Packages\\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\\LocalCache\\local-packages\\Python311\\site-packages\\selenium\\webdriver\\support\\expected_conditions.py",
+    "backup_path": "C:\\Users\\Acer\\OneDrive\\Documents\\Desktop\\self_healing\\Selfhealing-system\\selfheal_engine\\data\\backups\\expected_conditions_20260801_114203.py",
+    "old_locator": "sum-btn",
+    "new_locator": "submit-btn",
+    "confidence": 100.0,
+    "metrics": {
+      "R1_inner_text_40": 100.0,
+      "R2_xpath_pattern_30": 100.0,
+      "R3_css_class_20": 100.0,
+      "R4_neighbors_10": 100.0
+    },
+    "line_number": 518,
+    "status": "pending",
+    "diff": ""
+  },
+  {
+    "heal_id": "heal_20260801_114206_3",
+    "timestamp": "2026-08-01T11:42:06.206697+00:00",
+    "script_path": "C:\\Users\\Acer\\OneDrive\\Documents\\Desktop\\self_healing\\Selfhealing-system\\selfheal_engine\\demo_test.py",
+    "backup_path": "C:\\Users\\Acer\\OneDrive\\Documents\\Desktop\\self_healing\\Selfhealing-system\\selfheal_engine\\data\\backups\\demo_test_20260801_114206.py",
+    "old_locator": "sum-btn",
+    "new_locator": "submit-btn",
+    "confidence": 100.0,
+    "metrics": {
+      "R1_inner_text_40": 100.0,
+      "R2_xpath_pattern_30": 100.0,
+      "R3_css_class_20": 100.0,
+      "R4_neighbors_10": 100.0
+    },
+    "line_number": 62,
+    "status": "pending",
+    "diff": "--- demo_test.py (before)+++ demo_test.py (after)@@ -2,9 +2,9 @@ QA Test Script - Self-Healing Selenium Framework Demo\n ======================================================\n Demonstrates four element-location strategies:\n-  1. By ID            -> sum-btn\n+  1. By ID            -> submit-btn\n   2. By CSS Selector  -> button.btn-secondary\n-  3. By XPath (@id)   -> //button[@id='sum-btn']\n+  3. By XPath (@id)   -> //button[@id='submit-btn']\n   4. By XPath (text)  -> //button[normalize-space()='Cancel']\n \n When the page is intact, all four pass without healing.\n@@ -39,7 +39,7 @@     wait = WebDriverWait(driver, 10)\n \n     # \u2500\u2500 TEST 1: Submit button via ID \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n-    submit_btn = wait.until(EC.element_to_be_clickable((By.ID, \"sum-btn\")))\n+    submit_btn = wait.until(EC.element_to_be_clickable((By.ID, \"submit-btn\")))\n     submit_btn.click()\n     print(\"[PASS] Test 1 - Submit button located by ID\")\n \n@@ -59,7 +59,7 @@     time.sleep(1)\n \n     # \u2500\u2500 TEST 3: Submit button via Relative XPath \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n-    submit_btn = driver.find_element(By.XPATH, \"//button[@id='sum-btn']\")\n+    submit_btn = driver.find_element(By.XPATH, \"//button[@id='submit-btn']\")\n     submit_btn.click()\n     print(\"[PASS] Test 3 - Submit button located by XPath (@id)\")\n     time.sleep(1)\n"
+  }
+]

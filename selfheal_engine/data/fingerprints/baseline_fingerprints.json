@@ -1,0 +1,172 @@
+{
+  "submit-btn": {
+    "key": "submit-btn",
+    "locator_by": "id",
+    "locator_value": "submit-btn",
+    "element_id": "submit-btn",
+    "element_name": "",
+    "inner_text": "Submit",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/div[1]/button[1]",
+    "css_class": "btn btn-primary",
+    "tag_name": "button",
+    "neighbors": [
+      {
+        "tag_name": "button",
+        "text": "Cancel"
+      }
+    ],
+    "aria_label": "",
+    "placeholder": "",
+    "data_attrs": {},
+    "healed_locator_value": "#submit-btn",
+    "healed_locator_by": "css selector",
+    "healed_source_token": "submit-btn"
+  },
+  "cancel-btn": {
+    "key": "cancel-btn",
+    "locator_by": "id",
+    "locator_value": "cancel-btn",
+    "element_id": "cancel-btn",
+    "element_name": "",
+    "inner_text": "Cancel",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/div[1]/button[2]",
+    "css_class": "btn btn-secondary",
+    "tag_name": "button",
+    "neighbors": [
+      {
+        "tag_name": "button",
+        "text": "Submit"
+      }
+    ],
+    "aria_label": "",
+    "placeholder": "",
+    "data_attrs": {}
+  },
+  "main-card": {
+    "key": "main-card",
+    "locator_by": "id",
+    "locator_value": "main-card",
+    "element_id": "main-card",
+    "element_name": "",
+    "inner_text": "Automation Testing Target Page\nUse the buttons below to test element targeting via ID, Class, and XPath.\nSubmit\nCancel\nStatus: Awaiting action...",
+    "xpath_pattern": "/html[1]/body[1]/div[1]",
+    "css_class": "container",
+    "tag_name": "div",
+    "neighbors": [],
+    "aria_label": "",
+    "placeholder": "",
+    "data_attrs": {}
+  },
+  "action-section": {
+    "key": "action-section",
+    "locator_by": "id",
+    "locator_value": "action-section",
+    "element_id": "action-section",
+    "element_name": "",
+    "inner_text": "Submit\nCancel",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/div[1]",
+    "css_class": "button-group",
+    "tag_name": "div",
+    "neighbors": [
+      {
+        "tag_name": "h2",
+        "text": "Automation Testing Target Page"
+      },
+      {
+        "tag_name": "p",
+        "text": "Use the buttons below to test element targeting vi"
+      },
+      {
+        "tag_name": "div",
+        "text": "Status: Awaiting action..."
+      }
+    ],
+    "aria_label": "",
+    "placeholder": "",
+    "data_attrs": {}
+  },
+  "status-log": {
+    "key": "status-log",
+    "locator_by": "id",
+    "locator_value": "status-log",
+    "element_id": "status-log",
+    "element_name": "",
+    "inner_text": "Status: Awaiting action...",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/div[2]",
+    "css_class": "",
+    "tag_name": "div",
+    "neighbors": [
+      {
+        "tag_name": "h2",
+        "text": "Automation Testing Target Page"
+      },
+      {
+        "tag_name": "p",
+        "text": "Use the buttons below to test element targeting vi"
+      },
+      {
+        "tag_name": "div",
+        "text": "Submit\nCancel"
+      }
+    ],
+    "aria_label": "",
+    "placeholder": "",
+    "data_attrs": {}
+  },
+  "h2::Automation Testing Target Page": {
+    "key": "h2::Automation Testing Target Page",
+    "locator_by": "css selector",
+    "locator_value": "h2.Automation Testing Target Page",
+    "element_id": "",
+    "element_name": "",
+    "inner_text": "Automation Testing Target Page",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/h2[1]",
+    "css_class": "",
+    "tag_name": "h2",
+    "neighbors": [
+      {
+        "tag_name": "p",
+        "text": "Use the buttons below to test element targeting vi"
+      },
+      {
+        "tag_name": "div",
+        "text": "Submit\nCancel"
+      },
+      {
+        "tag_name": "div",
+        "text": "Status: Awaiting action..."
+      }
+    ],
+    "aria_label": "",
+    "placeholder": "",
+    "data_attrs": {}
+  },
+  "p::Use the buttons below to test element ta": {
+    "key": "p::Use the buttons below to test element ta",
+    "locator_by": "css selector",
+    "locator_value": "p.Use the buttons below to test element ta",
+    "element_id": "",
+    "element_name": "",
+    "inner_text": "Use the buttons below to test element targeting via ID, Class, and XPath.",
+    "xpath_pattern": "/html[1]/body[1]/div[1]/p[1]",
+    "css_class": "",
+    "tag_name": "p",
+    "neighbors": [
+      {
+        "tag_name": "h2",
+        "text": "Automation Testing Target Page"
+      },
+      {
+        "tag_name": "div",
+        "text": "Submit\nCancel"
+      },
+      {
+        "tag_name": "div",
+        "text": "Status: Awaiting action..."
+      }
+    ],
+    "aria_label": "",
+    "placeholder": "",
+    "data_attrs": {}
+  }
+}
