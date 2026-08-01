@@ -6,9 +6,9 @@
       "detail": "(got continue)"
     },
     {
-      "name": "Case NORMAL recovered locator",
+      "name": "Case NORMAL recovered locator (id outranks data-testid)",
       "status": "PASS",
-      "detail": "(got button.btn.btn-main)"
+      "detail": "(got start-btn)"
     },
     {
       "name": "Case MEDIUM lifecycle == verify",
@@ -28,7 +28,7 @@
     {
       "name": "CRITICAL routed to alerts (not ui_heals)",
       "status": "PASS",
-      "detail": "alerts=3"
+      "detail": "alerts=3 in_alerts=True absent_from_ui_heals=True"
     },
     {
       "name": "infrastructure row written",
@@ -51,7 +51,8 @@
     "infrastructure": 1,
     "alerts": 3,
     "browser_events": 2,
-    "source_heals": 0
+    "source_heals": 0,
+    "drift": 0
   },
   "passed": 9,
   "total": 9
