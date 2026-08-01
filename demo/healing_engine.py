@@ -499,11 +499,28 @@ class UIHeuristicEngine:
         "class name": "By.CLASS_NAME",
     }
 
+    def _broken_source_locator(self, broken_selector):
+        """(by, value) exactly as the QA script wrote them.
+
+        automation_wrapper formats the failing lookup as "id='qty'" /
+        "css selector='.btn-checkout'" / "xpath='//span[@id='total']'". The value
+        runs to the LAST quote, not the first: an XPath legitimately contains
+        inner quotes, and stopping at the first one yields the fragment
+        "//span[@id=" -- which silently corrupts the script when written back.
+
+        The `by` half matters just as much. A heal may recover a MORE stable
+        strategy than the one that broke (an id where the script used an XPath),
+        and the write-back has to move the By.* constant with it -- otherwise the
+        repaired value is pasted into a lookup that cannot interpret it.
+        """
+        m = re.match(r"^(.*?)='(.*)'$", str(broken_selector).strip(), re.DOTALL)
+        if not m:
+            return "", str(broken_selector)
+        return m.group(1).strip(), m.group(2)
+
     def _broken_source_token(self, broken_selector):
-        """Bare identifier the QA script actually used (e.g. clearBtn), so a
-        source patch matches `By.ID, "clearBtn"` rather than the wrapped
-        "id='clearBtn'" diagnostic form that the heal logs use."""
-        return self._extract_broken_value(broken_selector)
+        """The locator value the QA script actually used, in full."""
+        return self._broken_source_locator(broken_selector)[1]
 
     def generate_multi_locators(self, match_id, best_candidate=None):
         """Generate multiple locator strategies for a healed element.
@@ -624,7 +641,7 @@ class UIHeuristicEngine:
             tmp = self.fingerprint_path + ".tmp"
             with open(tmp, "w", encoding="utf-8") as f:
                 json.dump(self.fingerprints, f, indent=2)
-            os.replace(tmp, self.fingerprint_path)
+            store.replace_atomic(tmp, self.fingerprint_path)
             return healed_value
         except Exception as e:
             print(f"⚠️ metadata self-correction failed for '{match_id}': {e}")
@@ -693,7 +710,7 @@ class UIHeuristicEngine:
         else:
             healed_locator = self.update_metadata_locator(match_id, best_candidate)
 
-            old_token = self._broken_source_token(broken_selector)
+            old_by, old_token = self._broken_source_locator(broken_selector)
             new_token = self.canonical_locator(match_id, best_candidate)
 
             heal_entry = {
@@ -724,7 +741,10 @@ class UIHeuristicEngine:
                     new_locator=new_token,
                     confidence=score,
                     metrics=metrics,
-                    line_number=line_number
+                    line_number=line_number,
+                    old_by=old_by,
+                    new_by=recovered.get("by", "") if recovered else "",
+                    new_value=recovered.get("value", "") if recovered else "",
                 )
                 
                 lifecycle = "pending_approval"
@@ -804,7 +824,10 @@ class DynamicInfrastructureHealer:
         error_rate_stress = current_state.get("error_rate_percent", 0) > 40.0
         is_down = current_state.get("service_health") == "Down" or current_state.get("http_status") == 500
         
-        if is_down or (disk_stress and error_rate_stress):
+        # Any single breached threshold is enough. execute_infrastructure_heal
+        # branches per condition (disk / error / down), so requiring two at once
+        # left the disk-only and error-only recovery actions unreachable.
+        if is_down or disk_stress or error_rate_stress:
             self.execute_infrastructure_heal(current_state, disk_stress, error_rate_stress)
 
     def _purge_temp_files(self):
@@ -834,7 +857,7 @@ class DynamicInfrastructureHealer:
             tmp = self.history_path + ".rotating.tmp"
             with open(tmp, "w", encoding="utf-8") as f:
                 json.dump(trimmed, f, indent=2)
-            os.replace(tmp, self.history_path)
+            store.replace_atomic(tmp, self.history_path)
             return removed
         except Exception:
             return 0
@@ -891,9 +914,13 @@ class DynamicInfrastructureHealer:
         if killed_pid:
             time.sleep(0.5)
 
+        # Nothing was listening: the service is genuinely down rather than wedged,
+        # so this is a cold start, not a restart. Say so instead of "Killed PID None".
+        killed = f"Killed stale PID {killed_pid}" if killed_pid else "No stale listener found"
+
         app_script = os.path.join(config.BASE_DIR, "demo_target_app.py")
         if not os.path.exists(app_script):
-            return f"Killed PID {killed_pid} but demo_target_app.py not found at {app_script}"
+            return f"{killed}; demo_target_app.py not found at {app_script}"
 
         try:
             creation_flags = 0
@@ -908,18 +935,18 @@ class DynamicInfrastructureHealer:
                 start_new_session=(os.name != "nt"),
             )
         except Exception as e:
-            return f"Killed PID {killed_pid} but relaunch failed: {e}"
+            return f"{killed}; relaunch failed: {e}"
 
         for _ in range(10):
             time.sleep(0.5)
             try:
                 req = urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=2)
                 if req.status == 200:
-                    return f"Killed stale PID {killed_pid}, relaunched on port {port} — verified responding"
+                    return f"{killed}, relaunched on port {port} — verified responding"
             except Exception:
                 pass
 
-        return f"Killed PID {killed_pid}, relaunched on port {port} — not yet responding"
+        return f"{killed}, relaunched on port {port} — not yet responding"
 
     def execute_infrastructure_heal(self, state, disk_stress, error_stress):
         timestamp = datetime.utcnow().isoformat() + "+00:00"
