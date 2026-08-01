@@ -1,319 +1,366 @@
 # Rule-Based Self-Healing System for Web Application Reliability
 
-A lightweight, rule-based autonomous management layer that keeps web-application
-**test automation** and **infrastructure** running when things break — with no
-machine learning, fully deterministic, and a live dashboard. This is the
-implementation of the major project proposal *"Rule-Based Self-Healing System for
-Enhancing the Reliability of Web Applications"* (EEC).
+A deterministic, rule-based layer that keeps Selenium test suites running when a
+developer renames the ids and classes they depend on — and explains every
+decision it makes. No machine learning, no training data, no black box.
+
+Implementation of the major project *"Rule-Based Self-Healing System for
+Enhancing the Reliability of Web Applications"*.
 
 ---
 
-## 1. What it actually does
+## 1. The problem
 
-When a UI test points at an element whose locator has **broken** (id/class/xpath
-changed by a developer), a normal Selenium test crashes with
-`NoSuchElementException`. This system intercepts that crash and:
+A QA team writes a Selenium test. It passes. Next sprint a front-end developer
+renames some ids and classes — a refactor no user would notice. Every locator in
+the test breaks, the suite goes red, and someone spends an afternoon fixing
+selectors by hand.
 
-1. **Detects** the failure (Healing Mode trigger).
-2. **Scrapes** the live DOM and collects candidate elements.
-3. **Scores** each candidate against a stored *Golden Fingerprint* using a
-   weighted heuristic (Table 3.1 — text/xpath/css/neighbors).
-4. **Decides** by confidence threshold (auto-heal / cautious / halt).
-5. **Self-corrects**: writes the healed locator back into the fingerprint
-   metadata **and** the test automation source, so the fix is permanent.
-6. **Verifies + logs** the outcome and shows it on a real-time dashboard;
-   escalates to a human alert when it is not safe to act.
+This system does three things about that:
 
-In parallel, an **infrastructure monitor** watches disk / error-rate / service
-health and fires rule-based recovery actions (log rotation, worker reload, etc.).
+| # | Capability | Touches your files? |
+|---|---|---|
+| 1 | **Keeps the failing run alive** — matches the intended element against a learned baseline and reroutes the lookup mid-flight | No |
+| 2 | **Repairs the test script**, after a human approves the change | Only on approval |
+| 3 | **Refuses to guess** when nothing on the page is a credible match | No |
 
-> **Important:** "healing the code" = fixing the **locator** (in the metadata
-> repository and the automation script). The application-under-test's own HTML is
-> **never** modified — it is the target, not the patient.
+The third matters as much as the first two. A healer that always finds
+*something* is worse than no healer, because it turns a loud failure into a
+silent wrong pass.
 
----
-
-## 2. Architecture (5 layers, mapped to the proposal 3.1.2)
-
-```
-Request & Application Layer   demo_target_app.py      (Pomodoro AUT + UI + backend)
-Monitoring Layer              selfhealing/metrics_monitor.py  (traffic/disk/health/error)
-Decision Layer                healing_engine.py       (rule engine + R1-R4 scoring + thresholds)
-Healing & Execution Layer     automation_wrapper.py   (Selenium interceptor, reroute)
-                              source_healer.py        (automation-source self-correction)
-                              feedback.py             (verify -> escalate, loop guard)
-Visibility & Control Layer    dashboard.py            (Streamlit: logs, rates, alerts)
-```
-
-### Two request paths (`handlers.py`)
-- **Active path** (`handle_active_heal`): synchronous. Selenium blocks and gets
-  back a heal decision (lifecycle + locator + confidence) so it can keep driving.
-- **Passive path** (`handle_passive_event`): fire-and-forget telemetry ingest
-  (browser-agent JS errors, infra metrics). Producer waits for nothing.
-
-Both persist through one atomic, cross-process-safe store (`store.py`).
-
-### Two operating modes (proposal §3.4)
-- **Learning Mode** (`learning_mode.py`, `fingerprint_manager.py`): if no baseline
-  fingerprint metadata exists, the system scans the live AUT and captures a Golden
-  Fingerprint (id, text, xpath, css, tag, neighbors) for every interactive
-  element. Auto-triggered — delete the JSON and it rebuilds itself.
-- **Healing Mode** (`automation_wrapper.py` + `healing_engine.py`): the runtime
-  recovery flow described above.
+> The application under test is **never** modified. It is the target, not the
+> patient. Only the *locator* is repaired — at runtime always, and in your test
+> source only when a human clicks Approve.
 
 ---
 
-## 3. The heuristic (Table 3.1)
+## 2. Quick start
 
-When an element is not found, every live candidate is scored against the Golden
-Fingerprint:
+Python 3.10+, Google Chrome.
 
-| Rule | Attribute | Weight | Meaning |
-|------|-----------|--------|---------|
-| R1 | Inner text       | 40% | visible label / button text |
-| R2 | XPath pattern    | 30% | structural tree-position similarity |
-| R3 | CSS class        | 20% | styling / design attributes |
-| R4 | Neighbors        | 10% | surrounding elements match |
-
-`confidence = 0.40·R1 + 0.30·R2 + 0.20·R3 + 0.10·R4`
-
-**Decision thresholds** (`config.py`) and **error behavior**:
-
-| Score | Action | Throws error to test? |
-|-------|--------|-----------------------|
-| **≥ 75%** | Automatic Heal — reroute + update metadata + patch source | No — element returned |
-| **20–75%** | Cautious Heal — reroute but flag the row for review | No — element returned |
-| **< 20%** | Halt — raise CRITICAL alert, manual intervention | **Yes** — only here |
-
-So as long as confidence is **not critical (≥20%)**, the heal succeeds silently and
-the test keeps running; an error surfaces **only** when the match is too low (<20%)
-to act safely.
-
-### What triggers a heal vs what the rules do
-- **Trigger** = the *locator breaks* → `NoSuchElementException` (the id/css/xpath
-  the test searches by no longer finds anything). The R1–R4 rules do **not**
-  trigger the heal.
-- **R1–R4** then *re-identify* the element among DOM candidates and compute the
-  confidence. How much each attribute changed determines which rule's score drops
-  and therefore the auto / cautious / halt outcome.
-
-**Intent-aware matching:** the broken locator id is first matched to the
-fingerprint it *meant* (`select_target_fingerprint`), so two different broken
-locators heal to two different elements instead of both grabbing the top match.
-
-**Feedback loop** (`feedback.py`, proposal §3.4.4): every heal is verified; if the
-same locator fails to heal 3 times in a row it is **locked** and escalated — no
-infinite recovery loops.
-
----
-
-## 4. Setup
-
-Prereqs: Python 3.10+, Google Chrome installed.
-
-```bash
+```powershell
+cd demo
+python -m venv .venv
+.venv\Scripts\Activate
 pip install -r requirements.txt
 ```
 
----
+Run the demo that ships with it:
 
-## 5. Using it on a real Selenium QA suite
+```powershell
+python reset_all.py
 
-The healing layer is designed to be **bolted onto an existing test suite that
-knows nothing about it**. `tests/test_pomodoro.py` and `tests/pages/` are an
-ordinary page-object suite — explicit waits, behavioural assertions, zero
-healing imports — and they are run unchanged with and without the layer.
+python cli.py register --app bistro --name "Bistro Nova" `
+    --url "file:///D:/Selfhealing-system/demo/storefront/app.html" `
+    --source storefront/app.html
 
-Three integration levels, all sharing one heal core:
-
-| Level | Integration | Test-suite changes |
-|-------|-------------|--------------------|
-| **1 — transparent proxy** | `driver = SelfHealingWebDriver(webdriver.Chrome())` | 1 line |
-| **2 — zero-touch patch** | `import selfheal; selfheal.install()` | 1 line, anywhere in setup |
-| **3 — pytest** | `pytest tests/ --self-heal` | none |
-
-Level 2 patches `find_element` on both `WebDriver` and `WebElement`, so nested
-page-object lookups are covered — and because `WebDriverWait`'s expected
-conditions call `find_element` internally, **explicit waits heal too** instead of
-timing out. Level 1 delegates every non-lookup call to the real driver, so the
-wrapper is substitutable for one.
-
-`find_elements` healing exists but is **off by default**
-(`selfheal.install(heal_find_elements=True)` enables it). An empty list is a
-legitimate answer to `find_elements` — "no error banners on screen" — not a
-failure signal the way a raised `NoSuchElementException` is, so healing it turns
-every true absence into a false match.
-
-### The one-command demonstration
-
-```bash
-python demo.py --dashboard        # add --headed to watch Chrome
+python storefront\test_booking.py                    # Day 1 — learns the baseline
+Copy-Item storefront\app.v2.html storefront\app.html # the developer refactors
+python storefront\test_booking.py --no-heal          # crashes, as any suite would
+python storefront\test_booking.py --keep-baseline    # 5 heals, passes
 ```
 
-Runs the same suite twice against the same refactored build — once on stock
-Selenium, once with the layer installed:
+Dashboard, in a second terminal:
 
-```
-  Baseline .................. 1/5 passed
-  With self-healing layer ... 5/5 passed
-  Tests recovered ........... 4
-  Locator heals performed ... 5  (mean ~35ms each)
-  Suite wall-clock .......... 16.9s → 2.8s
-  Test code changed ......... 0 lines
+```powershell
+python -m streamlit run dashboard.py      # http://localhost:8501
 ```
 
-The fault injected is `?break=refactor`: ids, classes and a data attribute are
-renamed **consistently**, so the application still works perfectly for a human
-user — only the recorded locators have rotted. That is how locator rot happens
-in practice, and the failing baseline is also ~6× slower because every broken
-locator burns its full wait timeout.
-
-Full talk track in [`DEMO_RUNBOOK.md`](DEMO_RUNBOOK.md).
+Full walkthrough: [`final_demo.md`](final_demo.md).
 
 ---
 
-## 6. Running the individual scenarios
+## 3. The integration is one line
 
-Open the dashboard first and keep it visible:
+The layer is designed to bolt onto a suite that knows nothing about it:
 
-```bash
-# Dashboard  ->  http://localhost:8501
-python -m streamlit run dashboard.py
+```python
+import selfheal
 
-# Target app ->  http://127.0.0.1:8000   (separate terminal)
-python demo_target_app.py
+with selfheal.run(app="bistro", test="booking"):
+    driver = webdriver.Chrome()
+    driver.get(PAGE)
+    driver.find_element(By.ID, "guests").send_keys("4")   # heals if this breaks
 ```
 
-Then run any scenario below. Each maps to a validation row (proposal §3.8 / Ch.5)
-and to a screenshot in `qa_evidence/screenshots/`.
+`selfheal.run()` patches `find_element` on Selenium's own `WebDriver` and
+`WebElement` classes, so **every** driver the suite creates heals — including
+ones built deep inside a fixture, a page-object factory or a third-party helper.
+Verified consequences of patching the class rather than an instance:
 
-| # | Command | What it proves | Screenshot |
-|---|---------|----------------|------------|
-| 1 | `python run_selenium_heal.py` | **Healing Mode**: broken `old-start-btn` → real heal (≥75%), metadata + source self-correct | `02_dashboard_ui_healing.png` |
-| 2 | delete `data/pomodoro_3d_fingerprints.json` then `python run_selenium_heal.py` | **Learning Mode** auto-rebuilds the baseline, then heals | — |
-| 3 | `python simulate_infra_heal.py` | **Infrastructure heal** on disk/error stress | `04_dashboard_infrastructure.png` |
-| 4 | request a wildly-changed locator (see QA report) | **Safety gate**: <20% → halt + CRITICAL alert | `05_dashboard_alerts.png` |
-| 5 | re-run a heal | **Permanence/idempotent**: locator now valid, no heal needed | `03_dashboard_locator_self_correction.png` |
+| | Heals |
+|---|---|
+| `driver.find_element(...)` | yes |
+| `element.find_element(...)` — nested, page-object style | yes |
+| `WebDriverWait(...).until(EC.presence_of_element_located(...))` | yes — the condition calls `find_element` internally, so the heal beats the timeout |
+| a driver created *before* the `with` block | yes |
+| `driver.find_elements(...)` — plural | **no**, by default |
+| anything after the block exits | no — stock Selenium is restored |
 
-### Demonstrating each rule (break one attribute at a time)
-First break the locator so the heal fires, then change one fingerprinted
-attribute and watch that rule's component score drop on the dashboard while the
-heal still succeeds:
+`find_elements` is off deliberately: an empty list is a legitimate answer ("no
+error banners on screen"), so healing it would convert every true absence into a
+false match. Enable with `selfheal.run(..., heal_find_elements=True)`.
 
-| Change in `demo_target_app.py` (the AUT) | Rule that drops | Expected |
-|------------------------------------------|-----------------|----------|
-| rename `id="start-btn"` (so old locator misses) | (triggers the heal) | heal fires |
-| change button text `START` | R1 (40%) | big score drop, still heals |
-| move the button / change position | R2 (30%) | medium drop |
-| change `class="btn btn-main"` | R3 (20%) | small drop |
-| change surrounding elements | R4 (10%) | tiny drop |
+An explicit wrapper (`automation_wrapper.SelfHealingWebDriver`) also exists for
+suites that prefer substituting a driver object rather than patching.
 
-Change one → score stays ≥75 → auto-heal. Change many → score <20 → halt + alert
-(the safety demo).
-
-**One-click guided demo** (re-arms, runs, shows the before/after source diff):
-
-```bash
-python demo_show.py            # full narrated run
-python demo_show.py --reset    # re-arm the broken locator for another pass
-```
-
-What to watch on the dashboard:
-- **🔗 UI Heuristic Healing** — heal rows, R1–R4 breakdown, Healing Rate vs Success Rate.
-- **📝 Locator Self-Correction** — old→new locator written back to source/metadata.
-- **⚙️ Server Infrastructure Heals** — backend recovery actions.
-- **🚨 Alert Notification Logs** — browser errors + low-confidence/repeated-failure escalations.
-- **Sidebar** — live traffic / error rate / disk from the target app.
-
-### Step-by-step demo script (for a presentation)
-
-**Setup (before you start):** two terminals in `demo/`, plus a browser.
-```bash
-python -m streamlit run dashboard.py    # terminal 1  -> open http://localhost:8501
-python demo_target_app.py               # terminal 2  -> open http://127.0.0.1:8000
-```
-
-1. **Show the app.** Open `http://127.0.0.1:8000` — the Pomodoro timer. "This is
-   the live web app our tests drive."
-2. **Show the broken locator.** Open `run_selenium_heal.py`, point at line 28:
-   `BROKEN_LOCATOR = (By.ID, "old-start-btn")`. "This id does not exist — a normal
-   test crashes here."
-3. **Run the heal.** Terminal: `python run_selenium_heal.py`. Read the output live:
-   `⚠️ Element Missing → 🔬 scored candidates → ✨ Auto-Heal (≥75%) → ✅ resolved`.
-4. **Show the source changed.** Line 28 now reads `start-btn`. "The system rewrote
-   the broken locator in the source — permanent fix." (backup kept as `.bak`).
-5. **Show the dashboard.** `http://localhost:8501`:
-   - *UI Heuristic Healing* → the heal row with R1–R4 scores + confidence + rates.
-   - *Locator Self-Correction* → old→new locator write-back log.
-6. **Prove it's permanent.** Run `python run_selenium_heal.py` again → element found
-   directly, no heal needed.
-7. **(Optional) Safety demo.** Change many attributes / a non-existent element →
-   score <20% → it halts and posts a CRITICAL row in *Alert Notification Logs*
-   instead of clicking the wrong element.
-8. **(Optional) Infra + Learning.** `python simulate_infra_heal.py` (infra tab);
-   delete `data/pomodoro_3d_fingerprints.json` then run a heal → Learning Mode
-   rebuilds the baseline automatically.
-
-**Easiest path:** `python demo_show.py` runs steps 2–6 automatically with a paced,
-narrated before/after source diff. Re-arm for another pass with
-`python demo_show.py --reset`. Full talk-track in `DEMO_GUIDE.md`.
+Contract reference: [`testscript_guid.md`](testscript_guid.md).
 
 ---
 
-## 7. Project layout
+## 4. How it decides
+
+**Learning.** On a passing run, every locator the test *successfully resolved* is
+recorded as a Golden Fingerprint — tag, id, visible text, classes, attributes,
+XPath and neighbouring elements. Learning is bound to a passing run: if the test
+raises, the capture is discarded rather than recording a broken page as the
+reference state.
+
+**Healing.** When a lookup raises `NoSuchElementException`, every candidate
+element on the live page is scored against the fingerprint:
+
+| Rule | Attribute | Weight |
+|---|---|---|
+| R1 | Inner text | 40% |
+| R2 | XPath pattern (tree position) | 30% |
+| R3 | CSS class | 20% |
+| R4 | Neighbouring elements | 10% |
+
+**The weights are normalised, not summed flat.** Where an attribute is absent
+from *both* the fingerprint and the candidate, that rule is excluded and the
+remaining weights are renormalised, so absence is never scored as a mismatch.
+This is why an empty `<input>` with no visible text can still score 83% on
+position, class and neighbours alone — and why the system works on pages with no
+ids at all.
+
+**Policy:**
+
+| Score | Margin over runner-up | Outcome | Test sees an error? |
+|---|---|---|---|
+| ≥ 75% | clear | Automatic heal | No |
+| ≥ 75% | ambiguous | Cautious heal — applied, flagged | No |
+| 20–75% | — | Cautious heal — applied, flagged | No |
+| < 20% | — | **Refused** — critical alert raised | **Yes** |
+
+A 90% match is not trustworthy if the runner-up scores 88%; ambiguity is treated
+as a reason for caution, not confidence.
+
+**Locator Recovery.** When writing a repaired locator the engine ranks the live
+element's attributes by expected stability and picks the best available:
+
+```
+id → data-testid → data-test → data-qa → data-cy → name → aria-label
+   → visible text → css class → xpath
+```
+
+This is why a brittle XPath often comes back as a `By.ID`, and why the repaired
+script is *more* resistant to the next refactor than the original.
+
+---
+
+## 5. Three safety gates
+
+Worth knowing precisely, because they are what separate this from a fuzzy matcher.
+
+**1. Intent gate (40%).** Before scoring anything, the engine resolves *which*
+tracked element a broken locator meant, by string-similarity against the
+baseline. Below 40% it refuses outright — it does not know what you were looking
+for, so it will not guess. This is also why two different broken locators heal to
+two different elements instead of both grabbing the top match.
+
+**2. Identity gate.** R2 and R4 describe *where* an element sits, not *which*
+element it is. When a tracked element is deleted, the neighbour that shifts into
+its place inherits both — and could clear the safety gate on structural evidence
+alone. The gate blocks that whenever the fingerprint carries anything
+identifying (text, class, name, `aria-label`, `placeholder`, input type, any
+`data-*`).
+
+**3. Feedback loop.** Every heal is verified. A locator that fails to heal three
+times running is locked and escalated, so there are no infinite recovery loops.
+
+**Known bound, stated plainly:** an element that never existed but whose *name*
+shares a token with a tracked one can clear the intent gate and be scored
+structurally. Measured: `renew-membership-button` scores 43.8% against
+`member-id` and heals; `printer-jam-warning` scores 31.2% and is refused. When it
+happens the runner-up margin downgrades it to a cautious heal, so it is queued
+for human review and never written to source — but it is a real bound, not an
+impossibility.
+
+---
+
+## 6. What ships with it
+
+Three demo applications, deliberately at different scales, **none of them
+configured differently from the others**:
+
+| Folder | Shape | Heals on Day 2 |
+|---|---|---|
+| `minimal/` | one HTML file, **no ids**, no CSS file, no JavaScript | 5 |
+| `storefront/` | one self-contained HTML file (Bistro Nova) | 5 |
+| `webapp/` | `index.html` + `styles.css` + `app.js` | 6 |
+
+Each has `.v1` / `.v2` snapshots so the Day-1 → Day-2 refactor is repeatable.
+Separate CSS and JS files change nothing: the framework reads the **live DOM**
+after the browser has parsed and executed everything, and never opens your source
+files.
+
+---
+
+## 7. Command line
+
+```powershell
+python cli.py register --app <id> --url <url> [--name ...] [--source ...]
+python cli.py apps                       # registered applications and baselines
+python cli.py learn     --app <id>       # capture a baseline by scanning the page
+python cli.py baseline  --app <id>       # show the tracked elements
+python cli.py check     --app <id>       # change impact, WITHOUT running the suite
+python cli.py tests     --app <id>       # tests registered for this app
+python cli.py runs      --app <id>       # run history with ids and heal counts
+python cli.py report    --app <id> --test <id> --format md|patch|csv|json
+```
+
+`check` is the one to reach for after a developer edits the markup: it compares
+the live page against the baseline and reports the impact before CI ever runs —
+including the case where nothing broke.
+
+`report` renders **one run**, defaulting to the latest. Pass `--test` or `--run`
+to pick a different one; reporting an app whose most recent run was a refusal
+will correctly produce an empty patch.
+
+---
+
+## 8. The application registry
+
+Nothing in the framework names an application. An app is registered once, gets
+its own namespaced baseline, and every later operation is scoped to it:
+
+| Artefact | Path |
+|---|---|
+| Application record | `data/apps/<id>.json` |
+| Golden Fingerprint baseline | `data/fingerprints/<id>_fingerprints.json` |
+| Run records | `data/runs/r_<timestamp>_<id>_<test>.json` |
+| Telemetry | `data/buckets/*.json`, each row stamped with `app_id` |
+
+Two applications that both contain `#submit` keep entirely separate baselines and
+cannot corrupt each other. The id in `selfheal.run(app=...)` is the key — it must
+match what you pass to `cli.py`.
+
+---
+
+## 9. Dashboard
+
+`python -m streamlit run dashboard.py` — nine tabs, read-only about healing:
+
+| Tab | Shows |
+|---|---|
+| Applications | registered apps, baselines, tests, run history, report exports |
+| Locator healing | every runtime heal: broken → repaired, R1–R4 breakdown, written reason |
+| Approval Queue | pending source edits, with diff, Approve / Reject / Rollback |
+| Change impact | drift between the live page and the baseline |
+| Source write-back | fully automatic rewrites (opt-in path; inert under approval mode) |
+| Infrastructure | disk / error-rate / service-health recovery actions |
+| Alerts | refusals and threshold breaches |
+| Analytics | locator stability, flaky detection, heal-time and cost analysis |
+| Configuration | active application, thresholds, approval mode, fingerprint profiles |
+
+The sidebar scopes every tab to one application, test or individual run.
+
+---
+
+## 10. Approval workflow
+
+`APPROVAL_MODE_ENABLED = True` by default. Runtime healing keeps the run alive
+and touches no files; the corresponding source edit is a queued *recommendation*.
+Approving it patches the script, keeping a `.bak` for one-click rollback.
+
+Silent rewriting of committed test code is the one behaviour a QA team cannot
+audit, so the fully automatic path (`SOURCE_HEAL_ENABLED`, `source_healer.py`) is
+opt-in and off.
+
+---
+
+## 11. Architecture
 
 ```
 demo/
-├── demo.py                   # ONE-COMMAND demo: baseline vs healed, same suite
-├── selfheal.py               # zero-touch integration (patches Selenium in place)
-├── tests/                    # ordinary QA suite — unaware of the healing layer
-│   ├── test_pomodoro.py      #   behavioural tests (start/pause/reset/skip/mode)
-│   ├── pages/pomodoro_page.py#   page object: locators + explicit waits
-│   ├── conftest.py           #   pytest fixture + --self-heal flag
-│   ├── runner.py             #   pytest-free runner (--heal / --headed)
-│   └── driver_factory.py     #   shared Chrome factory
+├── selfheal.py              # the integration: patches Selenium in-process
+├── cli.py                   # register / learn / check / baseline / runs / report
+├── dashboard.py             # Streamlit control panel
 │
-├── demo_target_app.py        # Pomodoro AUT + live metrics thread + JS agent host
-├── selfhealing_agent.js      # in-browser agent (JS errors, image/selector healing)
-├── collector_server.py       # HTTP sink for the browser agent (passive path)
+├── healing_engine.py        # R1–R4 scoring, thresholds, safety gates, infra rules
+├── automation_wrapper.py    # find_element interceptor + explicit driver wrapper
+├── fingerprint_manager.py   # capture Golden Fingerprints
+├── learning_mode.py         # baseline bootstrap
+├── dom_features.py          # xpath + neighbour extraction (shared by both modes)
+├── drift_analyzer.py        # change impact without running tests
+├── feedback.py              # verify → escalate, loop guard
+├── handlers.py              # active (sync heal) vs passive (telemetry) paths
 │
-├── automation_wrapper.py     # SelfHealingWebDriver — Selenium find_element interceptor
-├── healing_engine.py         # R1-R4 heuristic + thresholds + infra rule engine
-├── handlers.py               # active (sync heal) vs passive (telemetry) paths
-├── feedback.py               # verify -> escalate, infinite-loop guard
-├── source_healer.py          # write healed locator back into automation source
+├── app_registry.py          # applications and their namespaced baselines
+├── test_registry.py         # tests, their scripts and health
+├── run_context.py           # one record per execution
+├── reports.py               # md / patch / csv / json renderings of a run
 │
-├── fingerprint_manager.py    # capture Golden Fingerprints (manual + auto-discover)
-├── learn_ui_fingerprint.py   # CLI to record a fingerprint from a live page
-├── learning_mode.py          # auto-bootstrap baseline if metadata missing
-├── dom_features.py           # shared xpath + neighbor extraction (learning + healing)
+├── approval_workflow.py     # queue → human review → patch → rollback
+├── source_healer.py         # automatic write-back (opt-in, off by default)
 │
-├── run_selenium_heal.py      # REAL end-to-end Selenium self-heal entry point
-├── demo_show.py              # one-click narrated demo (before/after source diff)
-├── test_ui_healing.py        # fast canned UI-heal scenario (no browser)
-├── simulate_infra_heal.py    # canned infrastructure-heal scenario
+├── store.py                 # per-bucket atomic JSON store (filelock + rolling window)
+├── config.py                # paths, thresholds, buckets
+├── config_manager.py        # dashboard-editable overrides
+├── theme.py / assets/       # dashboard styling
 │
-├── store.py                  # per-bucket atomic JSON store (filelock + rolling window)
-├── config.py                 # paths, thresholds, buckets, source-heal targets
-├── dashboard.py              # Streamlit control panel (4 tabs + sidebar)
+├── demo_target_app.py       # tiny HTTP app, relaunched by the infrastructure healer
+├── simulate_infra_heal.py   # drives the infrastructure healer with synthetic metrics
+├── selfhealing/             # background metrics monitor
+├── collector_server.py      # HTTP sink for the in-browser agent (passive path)
+├── selfhealing_agent.js     # in-browser agent: JS errors, selector events
 │
-├── selfhealing/metrics_monitor.py   # background telemetry thread (passive)
-├── data/                     # fingerprints, metrics history, per-bucket store, heal_state
-└── qa_evidence/              # capture.py, qa_checks.py, QA_REPORT.md, screenshots/
+├── minimal/ storefront/ webapp/   # the three demo applications
+├── data/                    # apps, fingerprints, runs, buckets, backups
+└── qa_evidence/             # QA report and screenshots
 ```
 
+### Storage
+
+Each telemetry stream is its own file under `data/buckets/`, written through
+`store.py`: temp file → `os.replace`, per-bucket `filelock` for cross-process
+safety, and a rolling-window size cap. The approval queue uses the same
+discipline, plus a retry — on Windows, `os.replace` fails if another process
+(such as the polling dashboard) has the file open.
+
 ---
 
-## 8. Storage
+## 12. Boundaries
 
-Each telemetry stream is its own file under `data/buckets/` (`ui_heals`,
-`infrastructure`, `alerts`, `browser_events`, `source_heals`), written through
-`store.py`: atomic temp→`os.replace`, per-bucket `filelock` (cross-process safe),
-and a rolling-window size cap (`config.BUCKET_LIMITS`).
+Stated plainly, because the honest scope is still a strong one.
+
+| Works | Does not |
+|---|---|
+| Any **Python + Selenium** suite: pytest, unittest, behave, page objects, fixtures, `WebDriverWait` | Playwright, Cypress — different API and runtime |
+| Any page: static, SPA, `file://`, `http://`, any file layout | Java / C# / Robot Framework Selenium |
+| `find_element`, top-level and nested | `find_elements` unless explicitly enabled |
+| Refactors changing ids, classes, names, link text, structure | A refactor changing text *and* class *and* position *and* neighbours at once — correctly refused, nothing left to match on |
+
+The infrastructure monitor watches disk, error rate and service health and
+applies rule-based recovery (log rotation, temp purge, process restart). In the
+shipped demo the metric snapshots are **synthetic**; the recovery actions
+themselves are real and performed by the same engine the live monitor drives.
 
 ---
 
-## 9. Tech stack
+## 13. Documentation
 
-Python · Selenium WebDriver · JSON (lightweight fingerprint/metadata store) ·
-Streamlit + Plotly (dashboard) · filelock (atomic store). Rule-based only — no ML.
+| File | Contents |
+|---|---|
+| [`final_demo.md`](final_demo.md) | the full demo, step by step, with real captured output |
+| [`applying_to_any_project.md`](applying_to_any_project.md) | proof it works on a trivial page and a multi-file app |
+| [`testscript_guid.md`](testscript_guid.md) | the test-script contract: imports, what heals, a template |
+| [`QUICKSTART.md`](QUICKSTART.md) | shortest path from zero to a heal |
+
+---
+
+## 14. Tech stack
+
+Python 3.10+ · Selenium WebDriver 4 · Streamlit + Plotly (dashboard) · pandas ·
+filelock (cross-process atomic store) · JSON for all persistence.
+**Rule-based only — no ML, no training data, no model to retrain.**
