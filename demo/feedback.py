@@ -53,7 +53,7 @@ def _save(state):
         tmp = _STATE_PATH + ".tmp"
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(state, f, indent=2)
-        os.replace(tmp, _STATE_PATH)
+        store.replace_atomic(tmp, _STATE_PATH)
     except Exception as e:
         print(f"⚠️ feedback state write failed: {e}")
 

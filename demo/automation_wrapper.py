@@ -34,6 +34,7 @@ import feedback
 import run_context
 import source_healer
 import config
+import store
 
 
 # --------------------------------------------------------------------------
@@ -141,7 +142,7 @@ def disable_learning(persist=True):
             tmp = path + ".tmp"
             with open(tmp, "w", encoding="utf-8") as f:
                 json.dump(_pending_snapshot, f, indent=2)
-            os.replace(tmp, path)
+            store.replace_atomic(tmp, path)
         except Exception as e:
             print(f"⚠️ page snapshot not saved: {e}")
     _pending_snapshot = None

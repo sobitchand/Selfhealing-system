@@ -68,7 +68,7 @@ def patch_source(broken_token, healed_token):
             tmp = path + ".tmp"
             with open(tmp, "w", encoding="utf-8") as f:
                 f.write(new_text)
-            os.replace(tmp, path)
+            store.replace_atomic(tmp, path)
 
             files_patched += 1
             print(f"📝 Source healed: {os.path.basename(path)} "

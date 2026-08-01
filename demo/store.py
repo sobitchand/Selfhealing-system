@@ -16,12 +16,40 @@ threading.Lock did nothing across separate processes).
 
 import json
 import os
+import time
 
 from filelock import FileLock, Timeout
 
 import config
 
 LOCK_TIMEOUT = 10  # seconds to wait for a contended bucket before giving up
+
+
+def replace_atomic(src, dst, attempts=10, delay=0.05):
+    """os.replace(), retried through transient Windows sharing violations.
+
+    THE shared primitive for every temp-file -> real-file swap in the project.
+    A cross-process lock only coordinates the processes that take it, and the
+    dashboard *reads* these files every three seconds without locking. Windows
+    refuses to replace a file any process currently has open, raising
+    PermissionError / [WinError 5] rather than blocking, so an unprotected
+    os.replace fails outright -- leaving a stray .tmp behind and aborting
+    whatever was writing.
+
+    The reader's handle lives for microseconds, so a short backoff clears it.
+    On POSIX os.replace never fails this way and the first attempt always wins.
+
+    Use this instead of a bare os.replace anywhere the dashboard, an editor or a
+    concurrent test run might hold the destination open.
+    """
+    for attempt in range(attempts):
+        try:
+            os.replace(src, dst)
+            return
+        except PermissionError:
+            if attempt == attempts - 1:
+                raise
+            time.sleep(delay * (attempt + 1))
 
 
 def _bucket_path(bucket):
@@ -72,7 +100,7 @@ def append(bucket, entry):
             tmp = path + ".tmp"
             with open(tmp, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
-            os.replace(tmp, path)
+            replace_atomic(tmp, path)
         return True
     except Timeout:
         print(f"⚠️ store.append: timed out acquiring lock for bucket '{bucket}'")

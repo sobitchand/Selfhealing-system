@@ -23,6 +23,7 @@ import re
 from datetime import datetime, timezone
 
 import config
+import store
 
 APPS_DIR = os.path.join(config.DATA_DIR, "apps")
 ACTIVE_MARKER = os.path.join(APPS_DIR, "ACTIVE")
@@ -75,7 +76,7 @@ def register(app_id, name=None, url=None, source=None, build_version=None):
     tmp = _app_path(app_id) + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(record, f, indent=2)
-    os.replace(tmp, _app_path(app_id))
+    store.replace_atomic(tmp, _app_path(app_id))
     return record
 
 
@@ -150,5 +151,5 @@ def mark_baseline_recorded(app_id, count=None):
     tmp = _app_path(app_id) + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(record, f, indent=2)
-    os.replace(tmp, _app_path(app_id))
+    store.replace_atomic(tmp, _app_path(app_id))
     return record

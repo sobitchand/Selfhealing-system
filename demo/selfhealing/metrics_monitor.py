@@ -5,6 +5,7 @@ import threading
 from contextlib import contextmanager
 from datetime import datetime
 import config
+import store
 from healing_engine import DynamicInfrastructureHealer
 
 # Global thread lock to prevent file-access collisions between scripts
@@ -124,18 +125,11 @@ class MetricsMonitor:
                     json.dump(data, f, indent=2)
 
                 # Atomically replace the old historical data file with the new one.
-                # threading.Lock only guards threads in THIS process; other processes
-                # writing the same file race us. On Windows os.replace raises
-                # PermissionError (WinError 5) when the destination is briefly held
-                # open by another process — retry with backoff instead of crashing.
-                for attempt in range(5):
-                    try:
-                        os.replace(temp_path, self.history_path)
-                        break
-                    except PermissionError:
-                        if attempt == 4:
-                            raise
-                        time.sleep(0.1)
+                # threading.Lock only guards threads in THIS process; other
+                # processes writing the same file race us, and on Windows that
+                # surfaces as PermissionError rather than a block. store handles
+                # the retry for every writer in the project.
+                store.replace_atomic(temp_path, self.history_path)
 
             except Exception as e:
                 print(f"❌ Critical error inside metrics snapshot writer: {str(e)}")

@@ -20,6 +20,7 @@ import threading
 from datetime import datetime, timezone
 
 import config
+import store
 
 RUNS_DIR = os.path.join(config.DATA_DIR, "runs")
 
@@ -122,7 +123,7 @@ def finish(status="passed"):
         tmp = path + ".tmp"
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(run, f, indent=2)
-        os.replace(tmp, path)
+        store.replace_atomic(tmp, path)
     except Exception as e:
         print(f"⚠️ run record not saved: {e}")
 

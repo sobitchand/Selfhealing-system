@@ -18,6 +18,7 @@ from datetime import datetime, timezone
 
 import app_registry
 import config
+import store
 
 TESTS_DIR = os.path.join(config.DATA_DIR, "tests")
 
@@ -49,7 +50,7 @@ def _write(record):
     tmp = path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(record, f, indent=2)
-    os.replace(tmp, path)
+    store.replace_atomic(tmp, path)
     return record
 
 
