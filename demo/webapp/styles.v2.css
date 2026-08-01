@@ -1,0 +1,52 @@
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, "Segoe UI", Arial, sans-serif;
+  background: #f4f5f7;
+  color: #1f2328;
+}
+
+.masthead { background: #1d3557; color: #fff; padding: 18px 28px; }
+.masthead h1 { margin: 0; font-size: 19px; letter-spacing: .3px; }
+
+main { max-width: 520px; margin: 34px auto; padding: 0 16px; }
+
+.card {
+  background: #fff;
+  border: 1px solid #e3e5e8;
+  border-radius: 10px;
+  padding: 26px 28px;
+  box-shadow: 0 1px 3px rgba(20, 25, 35, .06);
+}
+
+h2 { margin: 0 0 4px; font-size: 16px; }
+.muted { color: #63686f; font-size: 13px; margin: 0 0 18px; }
+.due-line { font-size: 14px; margin: 0 0 20px; }
+
+.field { margin-bottom: 16px; }
+.field label {
+  display: block;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: #63686f;
+  margin-bottom: 6px;
+}
+
+.input-control {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 15px;
+  border: 1px solid #d2d6db;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.btn { padding: 11px 18px; font-size: 15px; border: 0; border-radius: 6px; cursor: pointer; }
+.btn-primary { background: #1d3557; color: #fff; width: 100%; }
+
+.links { margin-top: 18px; }
+.link { color: #1d3557; font-size: 13px; text-decoration: none; }
+
+#notice { min-height: 19px; font-size: 13px; color: #1c6b3f; margin: 14px 0 0; }

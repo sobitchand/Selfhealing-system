@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>City Library — Overdue fine</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="masthead"><h1>City Library</h1></header>
+
+  <main>
+    <section class="card">
+      <h2>Overdue fine calculator</h2>
+      <p class="muted">Enter the borrower's details to calculate what is owed.</p>
+      <p class="due-line">Amount due: NPR <span id="amount-due">0.00</span></p>
+
+      <div class="field">
+        <label for="borrower-code">Borrower number</label>
+        <input id="borrower-code" type="text" class="input-control" placeholder="e.g. B-1042">
+      </div>
+
+      <div class="field">
+        <label for="days-overdue">Days overdue</label>
+        <input id="days-overdue" name="overdue-count" type="number" class="input-control" placeholder="0">
+      </div>
+
+      <div class="field">
+        <label for="membership-level">Membership</label>
+        <select id="membership-level" name="membership" class="input-control">
+          <option value="">Select membership…</option>
+          <option value="standard">Standard</option>
+          <option value="student">Student</option>
+        </select>
+      </div>
+
+      <button class="btn btn-primary" data-testid="calculate-fine">Calculate fine</button>
+      <p id="notice"></p>
+
+      <div class="links">
+        <a class="link" href="#policy">Fine policy</a>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
